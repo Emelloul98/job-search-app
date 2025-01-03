@@ -1,0 +1,29 @@
+# Files created by Visual Studio that should not be included in GitHub
+.vs/
+*.vcxproj.user
+*.suo
+*.userosscache
+
+# Build outputs
+*.obj
+*.exe
+*.dll
+*.lib
+*.pdb
+*.tlog/
+*.log
+*.idb
+*.ipdb
+*.iobj
+
+# Temporary files
+*.tmp
+*.log
+
+# Unrelated workspace files
+.DS_Store
+Thumbs.db
+
+# Workspace-specific files for IDEs
+.idea/
+.vscode/
