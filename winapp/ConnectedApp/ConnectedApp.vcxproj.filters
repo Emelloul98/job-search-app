@@ -35,5 +35,8 @@
     <ClInclude Include="CommonObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="myImages.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
