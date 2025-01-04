@@ -6,8 +6,6 @@
 #include "DrawThread.h"
 #include "DownloadThread.h"
 
-
-
 int main()
 { 
     CommonObjects common;

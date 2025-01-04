@@ -21,13 +21,3 @@ struct CommonObjects
 	std::string url;
 	std::vector<Jobs> jobs;
 };
-
-
-//struct Recipe
-//{
-//	std::string name;
-//	std::string cuisine;
-//	std::string difficulty;
-//	int cookTimeMinutes;
-//	std::string image;
-//};
