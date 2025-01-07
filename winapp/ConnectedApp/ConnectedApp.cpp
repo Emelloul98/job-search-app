@@ -13,7 +13,6 @@ int main()
     auto draw_th = std::jthread([&] {draw(common); });
     DownloadThread down;
     auto down_th = std::jthread([&] {down(common); });
-    down.SetUrl("http://....");
     std::cout << "running...\n";
     down_th.join();
     draw_th.join();

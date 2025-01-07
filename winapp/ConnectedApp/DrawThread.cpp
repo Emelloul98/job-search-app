@@ -13,10 +13,10 @@ void DrawThread::operator()(CommonObjects& common) {
 }
 void DrawAppWindow(void* common_ptr) {
     auto common = static_cast<CommonObjects*>(common_ptr);
-    RenderBackgroundAndButton(common);
+    RenderBackgroundImage(common);
     RenderSearchBar();
 }
-void RenderBackgroundAndButton(CommonObjects* common) {
+void RenderBackgroundImage(CommonObjects* common) {
     /*
         Drawing the background image
     */
@@ -37,7 +37,6 @@ void RenderBackgroundAndButton(CommonObjects* common) {
     );
 
 }
-
 void RenderCustomComboBox(const char* label, const char* items[], int items_count, int* selected_item, float column_width) {
     ImGui::PushID(label);
 
@@ -107,8 +106,6 @@ void RenderCustomComboBox(const char* label, const char* items[], int items_coun
     ImGui::EndGroup();
     ImGui::PopID();
 }
-
-
 void RenderSearchBar() {
 
     ImVec2 window_size = ImGui::GetIO().DisplaySize;
