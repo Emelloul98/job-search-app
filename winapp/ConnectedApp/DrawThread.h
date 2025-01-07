@@ -9,7 +9,7 @@ public:
 };
 
 void DrawAppWindow(void* common_ptr);
-void RenderSearchBar(bool* is_clicked);
+void RenderSearchBar();
 void RenderBackgroundAndButton(CommonObjects* common);
 ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels);
 

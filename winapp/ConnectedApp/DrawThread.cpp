@@ -14,7 +14,7 @@ void DrawThread::operator()(CommonObjects& common) {
 void DrawAppWindow(void* common_ptr) {
     auto common = static_cast<CommonObjects*>(common_ptr);
     RenderBackgroundAndButton(common);
-    if (common->find_job_button_clicked) RenderSearchBar(&common->find_job_button_clicked);
+    RenderSearchBar();
 }
 void RenderBackgroundAndButton(CommonObjects* common) {
     /*
@@ -36,31 +36,8 @@ void RenderBackgroundAndButton(CommonObjects* common) {
         ImVec2(1, 1)   // Tex coords (end)
     );
 
-    /*
-        Adds a button to the background image
-    */
-    ImVec2 button_size(300, 50);
-    ImVec2 button_pos((window_size.x - button_size.x) * 0.48f, (window_size.y + button_size.y) * 0.8f);
-    // Hover effect: Change color when hovering
-    ImColor button_color = IM_COL32(0, 128, 255, 255);  // Default color (blue)
-    if (ImGui::IsMouseHoveringRect(button_pos, ImVec2(button_pos.x + button_size.x, button_pos.y + button_size.y))) {
-        button_color = IM_COL32(0, 150, 255, 255);  // Light blue color when hovering
-        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-    }
-    // Click effect: Darker color when clicked
-    if (ImGui::IsMouseClicked(0) && ImGui::IsMouseHoveringRect(button_pos, ImVec2(button_pos.x + button_size.x, button_pos.y + button_size.y))) {
-        button_color = IM_COL32(0, 100, 200, 255);
-        common->find_job_button_clicked = true;
-    }
-    // Draw the button background
-    ImGui::GetBackgroundDrawList()->AddRectFilled(button_pos, ImVec2(button_pos.x + button_size.x, button_pos.y + button_size.y), button_color);
-    // Calculate text size and position to center the text
-    const char* button_text = "Find your dream job";
-    ImVec2 text_size = ImGui::CalcTextSize(button_text);
-    ImVec2 text_pos(button_pos.x + (button_size.x - text_size.x) * 0.5f, button_pos.y + (button_size.y - text_size.y) * 0.5f);
-    // Draw the centered text
-    ImGui::GetBackgroundDrawList()->AddText(text_pos, IM_COL32(255, 255, 255, 255), button_text);
 }
+
 void RenderCustomComboBox(const char* label, const char* items[], int items_count, int* selected_item, float column_width) {
     ImGui::PushID(label);
 
@@ -130,7 +107,25 @@ void RenderCustomComboBox(const char* label, const char* items[], int items_coun
     ImGui::EndGroup();
     ImGui::PopID();
 }
-void RenderSearchBar(bool* is_clicked) {
+
+
+void RenderSearchBar() {
+
+    ImVec2 window_size = ImGui::GetIO().DisplaySize;
+    float searchbar_width = 960.0f;
+    float center_position = (window_size.x - searchbar_width) * 0.5f;
+    float searchbar_y_pos = 270.0f;
+
+
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(window_size);
+    ImGui::Begin("SearchBarOverlay", nullptr,
+        ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_NoBackground |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoInputs |
+        ImGuiWindowFlags_NoSavedSettings);
+
     // Style variables
     const ImVec4 white_bg = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
     const ImVec4 orange_button = ImVec4(1.0f, 0.5f, 0.0f, 1.0f);
@@ -142,13 +137,13 @@ void RenderSearchBar(bool* is_clicked) {
     static int selected_role = -1;
     static int selected_field = -1;
 
-    // Define options for each combo box
+    //// Define options for each combo box
     static const char* job_types[] = { "Full Time", "Part Time", "Freelance", "Internship", "Contract" };
     static const char* locations[] = { "New York", "London", "Tokyo", "Berlin", "Remote" };
     static const char* roles[] = { "Developer", "Designer", "Manager", "Analyst", "Engineer" };
     static const char* fields[] = { "Technology", "Healthcare", "Finance", "Education", "Marketing" };
 
-    // Set up the main container style
+    //// Set up the main container style
     ImGui::PushStyleColor(ImGuiCol_ChildBg, white_bg);
     ImGui::PushStyleColor(ImGuiCol_Button, orange_button);
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.6f, 0.1f, 1.0f));
@@ -161,15 +156,14 @@ void RenderSearchBar(bool* is_clicked) {
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 25.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(15, 8));
 
+
     // Center the SearchBar
-    float window_width = ImGui::GetWindowSize().x;
-    float searchbar_width = 960.0f;
-    //float searchbar_height = 80; 
-    float center_position = (window_width - searchbar_width) * 0.5f;
+    
     ImGui::SetCursorPosX(center_position);
+    ImGui::SetCursorPosY(searchbar_y_pos); 
 
 
-    // Begin main container
+    //// Begin main container
     ImGui::BeginChild("SearchBar", ImVec2(searchbar_width, 80), true,
         ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar);
 
@@ -219,6 +213,8 @@ void RenderSearchBar(bool* is_clicked) {
     // Pop all style modifications
     ImGui::PopStyleVar();
     ImGui::PopStyleColor(6);
+    ImGui::End();
+
 }
 /*
 *  This code creates a texture from an image that is in the memory!

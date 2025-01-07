@@ -20,5 +20,5 @@ struct CommonObjects
 	std::atomic_bool data_ready = false;
 	std::string url;
 	std::vector<Jobs> jobs;
-	bool find_job_button_clicked = false;
+	std::string country;
 };
