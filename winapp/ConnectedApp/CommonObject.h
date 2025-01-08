@@ -2,6 +2,7 @@
 #include <atomic>
 #include <string>
 #include <vector>
+#include <unordered_map>
 struct Jobs
 {
 	std::string title;          // Job title (e.g., "Substitute Teacher K-12, get paid weekly")

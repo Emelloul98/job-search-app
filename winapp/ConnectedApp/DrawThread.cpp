@@ -135,8 +135,13 @@ void RenderSearchBar() {
     static int selected_field = -1;
 
     //// Define options for each combo box
+    static const char* locations[] = {
+    "United Kingdom", "United States", "Austria", "Australia", "Belgium", 
+    "Brazil", "Canada", "Switzerland", "Germany", "Spain", "France", 
+    "India", "Italy", "Mexico", "Netherlands", "New Zealand", "Poland", 
+    "Singapore", "South Africa"
+    };
     static const char* job_types[] = { "Full Time", "Part Time", "Freelance", "Internship", "Contract" };
-    static const char* locations[] = { "New York", "London", "Tokyo", "Berlin", "Remote" };
     static const char* roles[] = { "Developer", "Designer", "Manager", "Analyst", "Engineer" };
     static const char* fields[] = { "Technology", "Healthcare", "Finance", "Education", "Marketing" };
 
