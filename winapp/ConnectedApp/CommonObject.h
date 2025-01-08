@@ -3,6 +3,9 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <mutex>
+#include <condition_variable>
+
 struct Jobs
 {
 	std::string title;          // Job title (e.g., "Substitute Teacher K-12, get paid weekly")
@@ -19,10 +22,14 @@ struct CommonObjects
 	std::atomic_bool exit_flag = false;
 	std::atomic_bool start_download = false;
 	std::atomic_bool data_ready = false;
+	std::atomic_bool start_searching = false;
 	std::string url;
 	std::vector<Jobs> jobs;
+	std::vector<char*> labels;
+	std::mutex mtx;
+	std::condition_variable cv;
 	std::string country;
-	std::vector<std::string> labels;
-	/*std::mutex mtx;
-	std::condition_variable cv;*/
+	std::string field;
+	std::string job_type;
+	std::string sorted_by;
 };

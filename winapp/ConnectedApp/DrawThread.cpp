@@ -7,14 +7,42 @@
 #include "myImages.h"
 
 extern ID3D11Device* g_pd3dDevice;
-void DrawThread::operator()(CommonObjects& common) {
+void DrawAppWindow(void* common_ptr);
+void RenderSearchBar(CommonObjects* common);
+void RenderBackgroundImage(CommonObjects* common);
+void RenderCustomComboBox(const char* label, const char* items[], int items_count, int* selected_item, float column_width);
+ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels);
+
+const std::unordered_map<std::string, std::string> country_codes = {
+        {"United Kingdom", "gb"},
+        {"United States", "us"},
+        {"Austria", "at"},
+        {"Australia", "au"},
+        {"Belgium", "be"},
+        {"Brazil", "br"},
+        {"Canada", "ca"},
+        {"Switzerland", "ch"},
+        {"Germany", "de"},
+        {"Spain", "es"},
+        {"France", "fr"},
+        {"India", "in"},
+        {"Italy", "it"},
+        {"Mexico", "mx"},
+        {"Netherlands", "nl"},
+        {"New Zealand", "nz"},
+        {"Poland", "pl"},
+        {"Singapore", "sg"},
+        {"South Africa", "za"}
+};
+
+void DrawThread:: operator()(CommonObjects& common) {
     GuiMain(DrawAppWindow, &common);
     common.exit_flag = true;
 }
 void DrawAppWindow(void* common_ptr) {
     auto common = static_cast<CommonObjects*>(common_ptr);
     RenderBackgroundImage(common);
-    RenderSearchBar();
+    RenderSearchBar(common);
 }
 void RenderBackgroundImage(CommonObjects* common) {
     /*
@@ -106,7 +134,7 @@ void RenderCustomComboBox(const char* label, const char* items[], int items_coun
     ImGui::EndGroup();
     ImGui::PopID();
 }
-void RenderSearchBar() {
+void RenderSearchBar(CommonObjects* common) {
 
     ImVec2 window_size = ImGui::GetIO().DisplaySize;
     float searchbar_width = 960.0f;
@@ -129,21 +157,22 @@ void RenderSearchBar() {
     const ImVec4 black_text = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
 
     // Static variables for combo boxes
-    static int selected_job = -1;
+    static int selected_job_type = -1;
     static int selected_location = -1;
-    static int selected_role = -1;
+    static int selected_sorte = -1;
     static int selected_field = -1;
+	static int current_location = -1;
 
-    //// Define options for each combo box
+    // Define options for each combo box
     static const char* locations[] = {
     "United Kingdom", "United States", "Austria", "Australia", "Belgium", 
     "Brazil", "Canada", "Switzerland", "Germany", "Spain", "France", 
     "India", "Italy", "Mexico", "Netherlands", "New Zealand", "Poland", 
     "Singapore", "South Africa"
     };
-    static const char* job_types[] = { "Full Time", "Part Time", "Freelance", "Internship", "Contract" };
-    static const char* roles[] = { "Developer", "Designer", "Manager", "Analyst", "Engineer" };
-    static const char* fields[] = { "Technology", "Healthcare", "Finance", "Education", "Marketing" };
+    static const char* job_types[] = {"All", "Full Time", "Part Time"};
+    static const char* sorted_by[] = {"Default", "Hybrid", "Date", "Salary", "Relevence"};
+
 
     //// Set up the main container style
     ImGui::PushStyleColor(ImGuiCol_ChildBg, white_bg);
@@ -165,7 +194,7 @@ void RenderSearchBar() {
     ImGui::SetCursorPosY(searchbar_y_pos); 
 
 
-    //// Begin main container
+    // Begin main container
     ImGui::BeginChild("SearchBar", ImVec2(searchbar_width, 80), true,
         ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar);
 
@@ -179,21 +208,48 @@ void RenderSearchBar() {
     ImGui::SetColumnWidth(0, column_width);
     RenderCustomComboBox("Location", locations, IM_ARRAYSIZE(locations), &selected_location, column_width);
 
+	if (selected_location != current_location) {
+		selected_field = -1;
+        {
+            std::lock_guard<std::mutex> lock(common->mtx);
+            common->data_ready.store(false);
+        }
+	}
+
+    if (selected_location != -1 && !common->data_ready.load() && !common->start_download.load()){
+		current_location = selected_location;
+        std::string location_str(locations[selected_location]);
+        common->country = country_codes.at(location_str);
+
+        {
+            std::lock_guard<std::mutex> lock(common->mtx);
+            common->start_download.store(true);
+            common->cv.notify_one();
+        }
+    }
 
     // Job Type Column
     ImGui::NextColumn();
     ImGui::SetColumnWidth(1, column_width);
-    RenderCustomComboBox("Job Type", job_types, IM_ARRAYSIZE(job_types), &selected_job, column_width);
+
+    static const char* temp[100];
+    if (common->data_ready && !common->labels.empty()) { 
+        for (size_t i = 0; i < common->labels.size() && i < 100; i++) {
+            temp[i] = common->labels[i];  
+        }
+    }
+    RenderCustomComboBox("Field", temp, common->labels.size(), &selected_field, column_width);
 
     // Field Column
     ImGui::NextColumn();
+
     ImGui::SetColumnWidth(2, column_width);
-    RenderCustomComboBox("Field", fields, IM_ARRAYSIZE(fields), &selected_field, column_width);
+    RenderCustomComboBox("Job Type", job_types, IM_ARRAYSIZE(job_types), &selected_job_type, column_width);
 
     // Role Column
     ImGui::NextColumn();
     ImGui::SetColumnWidth(3, column_width);
-    RenderCustomComboBox("Role", roles, IM_ARRAYSIZE(roles), &selected_role, column_width);
+    RenderCustomComboBox("Sorted by", sorted_by, IM_ARRAYSIZE(sorted_by), &selected_sorte, column_width);
 
     // Move button inside the group, after the last column
     ImGui::NextColumn();
@@ -207,8 +263,19 @@ void RenderSearchBar() {
 
     ImGui::SetCursorPosY(button_y); // Only adjust Y position
     if (ImGui::Button("S", ImVec2(button_size, button_size))) {
-        // Handle search action
+        if (selected_job_type != -1 && selected_sorte != -1 && selected_field != -1 && selected_location != -1) {
+            {
+                std::lock_guard<std::mutex> lock(common->mtx);
+				common->field = common->labels[selected_field];
+				common->job_type = job_types[selected_job_type];
+                common->sorted_by = sorted_by[selected_sorte];
+                common->start_searching.store(true);
+                common->cv.notify_one();
+            }
+
+        }
     }
+   
     ImGui::EndGroup();
     ImGui::EndChild();
 

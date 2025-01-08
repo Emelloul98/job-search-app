@@ -12,18 +12,34 @@ httplib::Client cli("https://api.adzuna.com");
 
 void DownloadThread::operator()(CommonObjects& common)
 {
-    /*std::unique_lock<std::mutex> lock(common.mtx);
-    common.cv.wait(lock, [&common]() {
-       return common.start_download.load() || common.exit_flag.load();
-       });
-    if (common.exit_flag.load()) return;*/
-    getCountryLabels(common);
-	searchJobs(common);
+    while (true) {
+        {
+            std::unique_lock<std::mutex> lock(common.mtx);
+            common.cv.wait(lock, [&common]() {
+                return common.start_download.load() || common.start_searching.load();
+            });
+
+			if (common.exit_flag.load()) return;
+
+			if (common.start_download.load()) {
+                getCountryLabels(common);
+                common.data_ready.store(true);
+                common.start_download.store(false);
+                std::cout << "Data ready" << std::endl;
+			}
+			else {
+                searchJobs(common);
+                common.start_searching.store(false);
+			}
+          
+        }
+    }
+ 
 }
 void DownloadThread::getCountryLabels(CommonObjects& common)
 {
-    /*std::string current_country = common.country;*/
-    std::string current_country = "us";// Todo: remove
+    std::string current_country = common.country;
+    //std::string current_country = co;// Todo: remove
     // Construct the URL using the variables
     std::string url = "https://api.adzuna.com/v1/api/jobs/" + current_country + "/categories?app_id=" + app_id + "&app_key=" + app_key;
     // Send the GET request using the constructed URL
@@ -34,14 +50,20 @@ void DownloadThread::getCountryLabels(CommonObjects& common)
             nlohmann::json response = nlohmann::json::parse(res->body);
             common.labels.clear();
             for (const auto& category : response["results"]) {
-                std::string label = category["label"];
-                if (label != "Unknown") {
-                    common.labels.push_back(label);
+                std::string label = category["tag"];
+                if (label.size() >= 5 && label.compare(label.size() - 5, 5, "-jobs") == 0) {
+                    label.erase(label.size() - 5); // Remove the "jobs" part
+                }
+                if (label != "unknown") {
+                    // Allocate memory for the string
+                    char* label_cstr = new char[label.length() + 1];
+                    // Copy string content including null terminator
+                    strcpy_s(label_cstr, label.length() + 1, label.c_str());
+                    // Store the pointer
+                    common.labels.push_back(label_cstr);
                 }
             }
-            common.data_ready.store(true);
-            common.start_download.store(false);
-            std::cout << "Data ready" << std::endl;
+       
         }
         catch (const std::exception& e) {
             std::cerr << "Error parsing JSON: " << e.what() << std::endl;
@@ -53,19 +75,24 @@ void DownloadThread::getCountryLabels(CommonObjects& common)
 }
 void DownloadThread::searchJobs(CommonObjects& common)
 {
-    std::string current_country = "us"; // Todo: remove, dynamic assignment later
-    std::string current_category = "teaching-jobs"; // Todo: remove, dynamic assignment later
+
+    std::string current_country = common.country; // Todo: remove, dynamic assignment later
+    std::string current_category = common.field + "-jobs"; // Todo: remove, dynamic assignment later
+
 
     // Construct the URL for the "teaching-jobs" category
     std::string url = "https://api.adzuna.com/v1/api/jobs/" + current_country + "/search/100?app_id=" + app_id + "&app_key=" + app_key + "&results_per_page=10&category=" + current_category;
 
     // Send the GET request using the constructed URL
     auto res = cli.Get(url);
-    if (res && res->status == 200) {
+
+    if (res && (res->status >= 200 || res->status < 300)) {
         try {
             //std::cout << "Full Response: " << res->body << std::endl;
             // Parse the raw JSON response
+            //std::cout << "Full Response: " << res->body << std::endl;
             nlohmann::json response = nlohmann::json::parse(res->body);
+
             // Initialize the jobs vector from the response
             common.jobs.clear(); // Clear existing jobs data
             for (const auto& job_data : response["results"]) {
@@ -96,7 +123,7 @@ void DownloadThread::searchJobs(CommonObjects& common)
                 common.jobs.push_back(job);
             }
 
-            /*std::cout << "Printing first 2-3 job objects from the vector:" << std::endl;
+       /*     std::cout << "Printing first 2-3 job objects from the vector:" << std::endl;
             for (size_t i = 0; i < std::min(common.jobs.size(), size_t(10)); ++i) {
                 const Jobs& job = common.jobs[i];
                 std::cout << "Job " << i + 1 << ": " << std::endl;
@@ -110,9 +137,6 @@ void DownloadThread::searchJobs(CommonObjects& common)
                 std::cout << "-------------------------------" << std::endl;
             }*/
             // Indicate that the job data is ready
-            common.data_ready.store(true);
-            common.start_download.store(false);
-            std::cout << "Job data initialized." << std::endl;
         }
         catch (const std::exception& e) {
             std::cerr << "Error parsing JSON in searchJobs: " << e.what() << std::endl;
