@@ -16,20 +16,21 @@ void DownloadThread::operator()(CommonObjects& common)
         {
             std::unique_lock<std::mutex> lock(common.mtx);
             common.cv.wait(lock, [&common]() {
-                return common.start_download.load() || common.start_searching.load();
+                return common.start_download || common.start_searching;
             });
 
-			if (common.exit_flag.load()) return;
+			if (common.exit_flag) return;
 
-			if (common.start_download.load()) {
+			if (common.start_download) {
                 getCountryLabels(common);
-                common.data_ready.store(true);
-                common.start_download.store(false);
-                std::cout << "Data ready" << std::endl;
+                common.data_ready=true;
+                common.start_download=false;
+                std::cout << "Country data ready" << std::endl;
 			}
 			else {
                 searchJobs(common);
-                common.start_searching.store(false);
+                common.start_searching=false;
+                std::cout << "Full data ready" << std::endl;
 			}
           
         }
@@ -62,6 +63,7 @@ void DownloadThread::getCountryLabels(CommonObjects& common)
                     // Store the pointer
                     common.labels.push_back(label_cstr);
                 }
+                
             }
        
         }
@@ -78,8 +80,6 @@ void DownloadThread::searchJobs(CommonObjects& common)
 
     std::string current_country = common.country; // Todo: remove, dynamic assignment later
     std::string current_category = common.field + "-jobs"; // Todo: remove, dynamic assignment later
-
-
     // Construct the URL for the "teaching-jobs" category
     std::string url = "https://api.adzuna.com/v1/api/jobs/" + current_country + "/search/100?app_id=" + app_id + "&app_key=" + app_key + "&results_per_page=10&category=" + current_category;
 

@@ -211,19 +211,19 @@ void RenderSearchBar(CommonObjects* common) {
 	if (selected_location != current_location) {
 		selected_field = -1;
         {
-            std::lock_guard<std::mutex> lock(common->mtx);
-            common->data_ready.store(false);
+            /*std::lock_guard<std::mutex> lock(common->mtx);*/
+            common->data_ready=false;
         }
 	}
 
-    if (selected_location != -1 && !common->data_ready.load() && !common->start_download.load()){
+    if (selected_location != -1 && !common->data_ready && !common->start_download){
 		current_location = selected_location;
         std::string location_str(locations[selected_location]);
         common->country = country_codes.at(location_str);
 
         {
-            std::lock_guard<std::mutex> lock(common->mtx);
-            common->start_download.store(true);
+            //std::lock_guard<std::mutex> lock(common->mtx);
+            common->start_download=true;
             common->cv.notify_one();
         }
     }
@@ -265,11 +265,11 @@ void RenderSearchBar(CommonObjects* common) {
     if (ImGui::Button("S", ImVec2(button_size, button_size))) {
         if (selected_job_type != -1 && selected_sorte != -1 && selected_field != -1 && selected_location != -1) {
             {
-                std::lock_guard<std::mutex> lock(common->mtx);
+               /* std::lock_guard<std::mutex> lock(common->mtx);*/
 				common->field = common->labels[selected_field];
 				common->job_type = job_types[selected_job_type];
                 common->sorted_by = sorted_by[selected_sorte];
-                common->start_searching.store(true);
+                common->start_searching=true;
                 common->cv.notify_one();
             }
 
@@ -285,6 +285,7 @@ void RenderSearchBar(CommonObjects* common) {
     ImGui::End();
 
 }
+
 /*
 *  This code creates a texture from an image that is in the memory!
 *  It use the stb_image library to load the image from memory.
