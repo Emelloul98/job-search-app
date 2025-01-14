@@ -16,20 +16,21 @@ void DownloadThread::operator()(CommonObjects& common)
         {
             std::unique_lock<std::mutex> lock(common.mtx);
             common.cv.wait(lock, [&common]() {
-                return common.start_download || common.start_searching;
+                return common.start_download || common.start_country_searching;
             });
 
 			if (common.exit_flag) return;
 
 			if (common.start_download) {
                 getCountryLabels(common);
-                common.data_ready=true;
+                common.country_data_ready=true;
                 common.start_download=false;
                 std::cout << "Country data ready" << std::endl;
 			}
 			else {
                 searchJobs(common);
-                common.start_searching=false;
+                common.start_country_searching=false;
+				common.data_ready = true;
                 std::cout << "Full data ready" << std::endl;
 			}
           

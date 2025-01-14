@@ -11,6 +11,7 @@ void DrawAppWindow(void* common_ptr);
 void RenderSearchBar(CommonObjects* common);
 void RenderBackgroundImage(CommonObjects* common);
 void RenderCustomComboBox(const char* label, const char* items[], int items_count, int* selected_item, float column_width);
+void display_jobs(const std::vector<Jobs>& jobs);
 ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels);
 
 const std::unordered_map<std::string, std::string> country_codes = {
@@ -43,6 +44,7 @@ void DrawAppWindow(void* common_ptr) {
     auto common = static_cast<CommonObjects*>(common_ptr);
     RenderBackgroundImage(common);
     RenderSearchBar(common);
+    if (common->data_ready)  display_jobs(common->jobs);
 }
 void RenderBackgroundImage(CommonObjects* common) {
     /*
@@ -212,11 +214,11 @@ void RenderSearchBar(CommonObjects* common) {
 		selected_field = -1;
         {
             /*std::lock_guard<std::mutex> lock(common->mtx);*/
-            common->data_ready=false;
+            common->country_data_ready=false;
         }
 	}
 
-    if (selected_location != -1 && !common->data_ready && !common->start_download){
+    if (selected_location != -1 && !common->country_data_ready && !common->start_download){
 		current_location = selected_location;
         std::string location_str(locations[selected_location]);
         common->country = country_codes.at(location_str);
@@ -233,7 +235,7 @@ void RenderSearchBar(CommonObjects* common) {
     ImGui::SetColumnWidth(1, column_width);
 
     static const char* temp[100];
-    if (common->data_ready && !common->labels.empty()) { 
+    if (common->country_data_ready && !common->labels.empty()) { 
         for (size_t i = 0; i < common->labels.size() && i < 100; i++) {
             temp[i] = common->labels[i];  
         }
@@ -269,7 +271,7 @@ void RenderSearchBar(CommonObjects* common) {
 				common->field = common->labels[selected_field];
 				common->job_type = job_types[selected_job_type];
                 common->sorted_by = sorted_by[selected_sorte];
-                common->start_searching=true;
+                common->start_country_searching=true;
                 common->cv.notify_one();
             }
 
@@ -284,6 +286,58 @@ void RenderSearchBar(CommonObjects* common) {
     ImGui::PopStyleColor(6);
     ImGui::End();
 
+}
+void display_jobs(const std::vector<Jobs>& jobs)
+{
+    ImGui::Begin("Job Listings");
+
+    // Create table with columns: #, Title
+    if (ImGui::BeginTable("JobTable", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
+    {
+        // Table headers
+        ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+        ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableHeadersRow();
+
+        // Track expanded rows
+        static std::vector<bool> expanded(jobs.size(), false);
+
+        // Iterate over the jobs and create rows in the table
+        for (size_t i = 0; i < jobs.size(); ++i)
+        {
+            const Jobs& job = jobs[i];
+
+            // Begin a table row
+            ImGui::TableNextRow();
+
+            // Display job number
+            ImGui::TableNextColumn();
+            ImGui::Text("%zu", i + 1);
+
+            // Display job title with a toggle to expand/collapse details
+            ImGui::TableNextColumn();
+            if (ImGui::TreeNodeEx(job.title.c_str(), expanded[i] ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+            {
+                // Display job details when expanded
+                ImGui::Text("Company: %s", job.company.c_str());
+                ImGui::Text("Location: %s", job.location.c_str());
+                ImGui::Text("Salary: %s", job.salary.c_str());
+                ImGui::TextWrapped("Description: %s", job.description.c_str());
+                ImGui::Text("Posted on: %s", job.created_date.c_str());
+                ImGui::Text("URL: %s", job.url.c_str());
+                ImGui::TreePop();
+                expanded[i] = true;
+            }
+            else
+            {
+                expanded[i] = false;
+            }
+        }
+
+        ImGui::EndTable();
+    }
+
+    ImGui::End();
 }
 
 /*

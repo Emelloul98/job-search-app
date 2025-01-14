@@ -22,7 +22,8 @@ struct CommonObjects
 	std::atomic_bool exit_flag = false;
 	std::atomic_bool start_download = false;
 	std::atomic_bool data_ready = false;
-	std::atomic_bool start_searching = false;
+	std::atomic_bool start_country_searching = false;
+	std::atomic_bool country_data_ready = false;
 	std::string url;
 	std::vector<Jobs> jobs;
 	std::vector<char*> labels;
