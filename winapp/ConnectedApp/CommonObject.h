@@ -21,14 +21,11 @@ struct Jobs
 struct CommonObjects
 {
 	std::atomic_bool exit_flag = false;
-	std::atomic_bool start_download_fields = false;
 	std::atomic_bool start_job_searching = false;
-	std::atomic_bool fields_data_ready = false;
 	std::atomic_bool job_page_ready = false;
 	std::atomic_bool display_jobs = false;
 	std::string url;
 	std::vector<Jobs> jobs;
-	std::vector<char*> labels;
 	std::mutex mtx;
 	std::condition_variable cv;
 	std::string country;

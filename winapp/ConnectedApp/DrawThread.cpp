@@ -10,7 +10,7 @@ extern ID3D11Device* g_pd3dDevice;
 void DrawAppWindow(void* common_ptr);
 void RenderSearchBar(CommonObjects* common);
 void RenderBackgroundImage(CommonObjects* common);
-void RenderCustomComboBox(const char* label, const char* items[], int items_count, int* selected_item, float column_width);
+void RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width);
 void display_jobs(CommonObjects* common);
 ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels);
 std::vector<Jobs> current_jobs;
@@ -74,7 +74,7 @@ void RenderBackgroundImage(CommonObjects* common) {
     );
 
 }
-void RenderCustomComboBox(const char* label, const char* items[], int items_count, int* selected_item, float column_width) {
+void RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width) {
     ImGui::PushID(label);
 
     float searchbar_height = 80.0f;
@@ -170,7 +170,6 @@ void RenderSearchBar(CommonObjects* common) {
     static int selected_location = -1;
     static int selected_sorte = -1;
     static int selected_field = -1;
-	static int current_location = -1;
 
     // Define options for each combo box
     static const char* locations[] = {
@@ -178,6 +177,13 @@ void RenderSearchBar(CommonObjects* common) {
     "Brazil", "Canada", "Switzerland", "Germany", "Spain", "France", 
     "India", "Italy", "Mexico", "Netherlands", "New Zealand", "Poland", 
     "Singapore", "South Africa"
+    };
+    static const char* fields[] = { "accounting-finance", "it", "sales", "customer-services", "engineering", "hr",
+        "healthcare-nursing", "hospitality-catering", "pr-advertising-marketing", "logistics-warehouse",
+        "teaching", "trade-construction", "admin", "legal", "creative-design", "graduate", "retail",
+        "consultancy", "manufacturing", "scientific-qa", "social-work", "travel", "energy-oil-gas",
+        "property", "charity-voluntary", "domestic-help-cleaning", "maintenance", "part-time",
+        "other-general" 
     };
     static const char* job_types[] = {"All", "Full Time", "Part Time"};
     static const char* sorted_by[] = {"Default", "Hybrid", "Date", "Salary", "Relevence"};
@@ -217,31 +223,11 @@ void RenderSearchBar(CommonObjects* common) {
     ImGui::SetColumnWidth(0, column_width);
     RenderCustomComboBox("Location", locations, IM_ARRAYSIZE(locations), &selected_location, column_width);
 
-	if (selected_location != current_location) {
-		selected_field = -1;
-        /*std::lock_guard<std::mutex> lock(common->mtx);*/
-        common->fields_data_ready=false;
-	}
-
-    if (selected_location != -1 && !common->fields_data_ready && !common->start_download_fields){
-		current_location = selected_location;
-        std::string location_str(locations[selected_location]);
-        common->country = country_codes.at(location_str);
-        //std::lock_guard<std::mutex> lock(common->mtx);
-        common->start_download_fields=true;
-        common->cv.notify_one();
-    }
-
     // Job Type Column
     ImGui::NextColumn();
     ImGui::SetColumnWidth(1, column_width);
-    static const char* temp[100];
-    if (common->fields_data_ready && !common->labels.empty()) { 
-        for (size_t i = 0; i < common->labels.size() && i < 100; i++) {
-            temp[i] = common->labels[i];  
-        }
-    }
-    RenderCustomComboBox("Field", temp, common->labels.size(), &selected_field, column_width);
+  
+    RenderCustomComboBox("Field", fields, IM_ARRAYSIZE(fields), &selected_field, column_width);
 
     // Field Column
     ImGui::NextColumn();
@@ -267,14 +253,14 @@ void RenderSearchBar(CommonObjects* common) {
     ImGui::SetCursorPosY(button_y); // Only adjust Y position
     if (ImGui::Button("S", ImVec2(button_size, button_size))) {
         if (selected_job_type != -1 && selected_sorte != -1 && selected_field != -1 && selected_location != -1) {
-            {
-               /* std::lock_guard<std::mutex> lock(common->mtx);*/
-				common->field = common->labels[selected_field];
-				common->job_type = job_types[selected_job_type];
-                common->sorted_by = sorted_by[selected_sorte];
-                common->start_job_searching=true;
-                common->cv.notify_one();
-            }
+            
+            common->country = country_codes.at(locations[selected_location]);
+			common->field = fields[selected_field];
+			common->job_type = job_types[selected_job_type];
+            common->sorted_by = sorted_by[selected_sorte];
+
+            common->start_job_searching=true;
+            common->cv.notify_one();  
 
         }
     }

@@ -16,69 +16,28 @@ void DownloadThread::operator()(CommonObjects& common)
         {
             std::unique_lock<std::mutex> lock(common.mtx);
             common.cv.wait(lock, [&common]() {
-                return common.start_download_fields || common.start_job_searching;
+                return common.start_job_searching.load();
             });
+
 			if (common.exit_flag) return;
-			if (common.start_download_fields) {
-                getCountryLabels(common);
-                common.fields_data_ready=true;
-                common.start_download_fields=false;
-                std::cout << "Country data ready" << std::endl;
-			}
-			else {
-                searchJobs(common);
-                common.start_job_searching=false;
-				common.job_page_ready = true;
-                std::cout << "Full data ready" << std::endl;
-			}
+			
+            searchJobs(common);
+            common.start_job_searching=false;
+			common.job_page_ready = true;
+            std::cout << "Full data ready" << std::endl;
+			
           
         }
     }
  
 }
-void DownloadThread::getCountryLabels(CommonObjects& common)
-{
-    std::string current_country = common.country;
-    //std::string current_country = co;// Todo: remove
-    // Construct the URL using the variables
-    std::string url = "https://api.adzuna.com/v1/api/jobs/" + current_country + "/categories?app_id=" + app_id + "&app_key=" + app_key;
-    // Send the GET request using the constructed URL
-    auto res = cli.Get(url);
-    // Check the response
-    if (res && res->status == 200) {
-        try {
-            nlohmann::json response = nlohmann::json::parse(res->body);
-            common.labels.clear();
-            for (const auto& category : response["results"]) {
-                std::string label = category["tag"];
-                if (label.size() >= 5 && label.compare(label.size() - 5, 5, "-jobs") == 0) {
-                    label.erase(label.size() - 5); // Remove the "jobs" part
-                }
-                if (label != "unknown") {
-                    // Allocate memory for the string
-                    char* label_cstr = new char[label.length() + 1];
-                    // Copy string content including null terminator
-                    strcpy_s(label_cstr, label.length() + 1, label.c_str());
-                    // Store the pointer
-                    common.labels.push_back(label_cstr);
-                }
-                
-            }
-       
-        }
-        catch (const std::exception& e) {
-            std::cerr << "Error parsing JSON: " << e.what() << std::endl;
-        }
-    }
-    else {
-        std::cerr << "Error fetching job data: " << res.error() << std::endl;
-    }
-}
+
 void DownloadThread::searchJobs(CommonObjects& common)
 {
 
-    std::string current_country = common.country; // Todo: remove, dynamic assignment later
-    std::string current_category = common.field + "-jobs"; // Todo: remove, dynamic assignment later
+    std::string current_country = common.country; 
+    std::string current_category = common.field + "-jobs"; 
+
     // Construct the URL for the "teaching-jobs" category
     std::string url = "https://api.adzuna.com/v1/api/jobs/" + current_country + "/search/" + std::to_string(common.current_page) +"?app_id=" + app_id + "&app_key=" + app_key + "&results_per_page=2&category=" + current_category;
 
@@ -87,7 +46,6 @@ void DownloadThread::searchJobs(CommonObjects& common)
 
     if (res && (res->status >= 200 || res->status < 300)) {
         try {
-            //std::cout << "Full Response: " << res->body << std::endl;
             // Parse the raw JSON response
             nlohmann::json response = nlohmann::json::parse(res->body);
             //common.jobs.clear();
@@ -129,7 +87,7 @@ void DownloadThread::searchJobs(CommonObjects& common)
                 common.jobs.push_back(job);
             }
 
-            /*for (size_t i = 0; i < common.jobs.size();i++) {
+           /* for (size_t i = 0; i < common.jobs.size();i++) {
                 const Jobs& job = common.jobs[i];
                 std::cout << "Job " << i + 1 << ": " << std::endl;
                 std::cout << "Title: " << job.title << std::endl;
