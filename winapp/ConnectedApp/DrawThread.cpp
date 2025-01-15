@@ -11,8 +11,9 @@ void DrawAppWindow(void* common_ptr);
 void RenderSearchBar(CommonObjects* common);
 void RenderBackgroundImage(CommonObjects* common);
 void RenderCustomComboBox(const char* label, const char* items[], int items_count, int* selected_item, float column_width);
-void display_jobs(const std::vector<Jobs>& jobs);
+void display_jobs(CommonObjects* common);
 ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels);
+std::vector<Jobs> current_jobs;
 
 const std::unordered_map<std::string, std::string> country_codes = {
         {"United Kingdom", "gb"},
@@ -44,7 +45,13 @@ void DrawAppWindow(void* common_ptr) {
     auto common = static_cast<CommonObjects*>(common_ptr);
     RenderBackgroundImage(common);
     RenderSearchBar(common);
-    if (common->data_ready)  display_jobs(common->jobs);
+    if (common->job_page_ready) 
+    {
+		current_jobs = common->jobs;
+		common->job_page_ready = false;
+		common->display_jobs = true;
+    }
+    if(common->display_jobs) display_jobs(common);
 }
 void RenderBackgroundImage(CommonObjects* common) {
     /*
@@ -212,30 +219,24 @@ void RenderSearchBar(CommonObjects* common) {
 
 	if (selected_location != current_location) {
 		selected_field = -1;
-        {
-            /*std::lock_guard<std::mutex> lock(common->mtx);*/
-            common->country_data_ready=false;
-        }
+        /*std::lock_guard<std::mutex> lock(common->mtx);*/
+        common->fields_data_ready=false;
 	}
 
-    if (selected_location != -1 && !common->country_data_ready && !common->start_download){
+    if (selected_location != -1 && !common->fields_data_ready && !common->start_download_fields){
 		current_location = selected_location;
         std::string location_str(locations[selected_location]);
         common->country = country_codes.at(location_str);
-
-        {
-            //std::lock_guard<std::mutex> lock(common->mtx);
-            common->start_download=true;
-            common->cv.notify_one();
-        }
+        //std::lock_guard<std::mutex> lock(common->mtx);
+        common->start_download_fields=true;
+        common->cv.notify_one();
     }
 
     // Job Type Column
     ImGui::NextColumn();
     ImGui::SetColumnWidth(1, column_width);
-
     static const char* temp[100];
-    if (common->country_data_ready && !common->labels.empty()) { 
+    if (common->fields_data_ready && !common->labels.empty()) { 
         for (size_t i = 0; i < common->labels.size() && i < 100; i++) {
             temp[i] = common->labels[i];  
         }
@@ -271,7 +272,7 @@ void RenderSearchBar(CommonObjects* common) {
 				common->field = common->labels[selected_field];
 				common->job_type = job_types[selected_job_type];
                 common->sorted_by = sorted_by[selected_sorte];
-                common->start_country_searching=true;
+                common->start_job_searching=true;
                 common->cv.notify_one();
             }
 
@@ -287,10 +288,9 @@ void RenderSearchBar(CommonObjects* common) {
     ImGui::End();
 
 }
-void display_jobs(const std::vector<Jobs>& jobs)
+void display_jobs(CommonObjects* common)
 {
     ImGui::Begin("Job Listings");
-
     // Create table with columns: #, Title
     if (ImGui::BeginTable("JobTable", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
     {
@@ -299,14 +299,10 @@ void display_jobs(const std::vector<Jobs>& jobs)
         ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableHeadersRow();
 
-        // Track expanded rows
-        static std::vector<bool> expanded(jobs.size(), false);
-
         // Iterate over the jobs and create rows in the table
-        for (size_t i = 0; i < jobs.size(); ++i)
+        for (size_t i = 0; i < current_jobs.size(); ++i)
         {
-            const Jobs& job = jobs[i];
-
+            Jobs& job = current_jobs[i]; 
             // Begin a table row
             ImGui::TableNextRow();
 
@@ -316,7 +312,7 @@ void display_jobs(const std::vector<Jobs>& jobs)
 
             // Display job title with a toggle to expand/collapse details
             ImGui::TableNextColumn();
-            if (ImGui::TreeNodeEx(job.title.c_str(), expanded[i] ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+            if (ImGui::TreeNodeEx(job.title.c_str(), job.is_expanded ? ImGuiTreeNodeFlags_DefaultOpen : 0))
             {
                 // Display job details when expanded
                 ImGui::Text("Company: %s", job.company.c_str());
@@ -326,19 +322,34 @@ void display_jobs(const std::vector<Jobs>& jobs)
                 ImGui::Text("Posted on: %s", job.created_date.c_str());
                 ImGui::Text("URL: %s", job.url.c_str());
                 ImGui::TreePop();
-                expanded[i] = true;
+                job.is_expanded = true;  
             }
             else
             {
-                expanded[i] = false;
+                job.is_expanded = false;  
             }
         }
 
         ImGui::EndTable();
     }
+    // Calculate the button position
+    float window_width = ImGui::GetWindowSize().x;
+    float button_width = 120.0f; // Width of the button
+    float button_x = (window_width - button_width) * 0.5f; // Center the button horizontally
+    ImGui::SetCursorPosX(button_x);
+
+    // Add button to load more jobs
+    if (ImGui::Button("Load More Jobs", ImVec2(button_width, 30.0f)))
+    {
+        common->current_page++;
+        common->start_job_searching = true;
+        common->cv.notify_one();
+    }
 
     ImGui::End();
 }
+
+
 
 /*
 *  This code creates a texture from an image that is in the memory!

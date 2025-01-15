@@ -15,15 +15,17 @@ struct Jobs
 	std::string salary;         // Salary (e.g., "36940.19")
 	std::string description;    // Job description (e.g., "Step in for absent teachers with Swing Education...")
 	std::string created_date;   // Date the job was posted (e.g., "2025-01-02T15:09:11Z")
+	bool is_expanded = false;
 };
 
 struct CommonObjects
 {
 	std::atomic_bool exit_flag = false;
-	std::atomic_bool start_download = false;
-	std::atomic_bool data_ready = false;
-	std::atomic_bool start_country_searching = false;
-	std::atomic_bool country_data_ready = false;
+	std::atomic_bool start_download_fields = false;
+	std::atomic_bool start_job_searching = false;
+	std::atomic_bool fields_data_ready = false;
+	std::atomic_bool job_page_ready = false;
+	std::atomic_bool display_jobs = false;
 	std::string url;
 	std::vector<Jobs> jobs;
 	std::vector<char*> labels;
@@ -33,4 +35,5 @@ struct CommonObjects
 	std::string field;
 	std::string job_type;
 	std::string sorted_by;
+	std::atomic<int> current_page = 1;
 };

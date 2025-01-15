@@ -16,21 +16,19 @@ void DownloadThread::operator()(CommonObjects& common)
         {
             std::unique_lock<std::mutex> lock(common.mtx);
             common.cv.wait(lock, [&common]() {
-                return common.start_download || common.start_country_searching;
+                return common.start_download_fields || common.start_job_searching;
             });
-
 			if (common.exit_flag) return;
-
-			if (common.start_download) {
+			if (common.start_download_fields) {
                 getCountryLabels(common);
-                common.country_data_ready=true;
-                common.start_download=false;
+                common.fields_data_ready=true;
+                common.start_download_fields=false;
                 std::cout << "Country data ready" << std::endl;
 			}
 			else {
                 searchJobs(common);
-                common.start_country_searching=false;
-				common.data_ready = true;
+                common.start_job_searching=false;
+				common.job_page_ready = true;
                 std::cout << "Full data ready" << std::endl;
 			}
           
@@ -82,7 +80,7 @@ void DownloadThread::searchJobs(CommonObjects& common)
     std::string current_country = common.country; // Todo: remove, dynamic assignment later
     std::string current_category = common.field + "-jobs"; // Todo: remove, dynamic assignment later
     // Construct the URL for the "teaching-jobs" category
-    std::string url = "https://api.adzuna.com/v1/api/jobs/" + current_country + "/search/100?app_id=" + app_id + "&app_key=" + app_key + "&results_per_page=10&category=" + current_category;
+    std::string url = "https://api.adzuna.com/v1/api/jobs/" + current_country + "/search/" + std::to_string(common.current_page) +"?app_id=" + app_id + "&app_key=" + app_key + "&results_per_page=2&category=" + current_category;
 
     // Send the GET request using the constructed URL
     auto res = cli.Get(url);
@@ -91,11 +89,9 @@ void DownloadThread::searchJobs(CommonObjects& common)
         try {
             //std::cout << "Full Response: " << res->body << std::endl;
             // Parse the raw JSON response
-            //std::cout << "Full Response: " << res->body << std::endl;
             nlohmann::json response = nlohmann::json::parse(res->body);
-
-            // Initialize the jobs vector from the response
-            common.jobs.clear(); // Clear existing jobs data
+            //common.jobs.clear();
+            // Initialize the jobs vector from the response            
             for (const auto& job_data : response["results"]) {
                 Jobs job;
                 // Extract title and company name
@@ -108,11 +104,20 @@ void DownloadThread::searchJobs(CommonObjects& common)
                     location_str += area[i].get<std::string>() + ", ";
                 }
                 if (!location_str.empty()) {
-                    location_str = location_str.substr(0, location_str.size() - 2);  // Remove trailing comma
+                    // Remove trailing comma
+                    location_str = location_str.substr(0, location_str.size() - 2);  
                 }
                 job.location = location_str;
                 // Extract salary (only salary_min)
-                job.salary = "$" + std::to_string(job_data["salary_min"].get<double>());
+                if (job_data.contains("salary_min")) {
+                    job.salary = "$" + formatNumberWithCommas(static_cast<int>(job_data["salary_min"].get<double>()));
+                }
+                else if (job_data.contains("salary_max")) {
+                    job.salary = "$" + formatNumberWithCommas(static_cast<int>(job_data["salary_max"].get<double>()));
+                }
+                else {
+                    job.salary = "Not Specified";
+                }                
                 // Extract job URL
                 job.url = job_data["redirect_url"];
                 // Extract job description and check its length
@@ -124,8 +129,7 @@ void DownloadThread::searchJobs(CommonObjects& common)
                 common.jobs.push_back(job);
             }
 
-       /*     std::cout << "Printing first 2-3 job objects from the vector:" << std::endl;
-            for (size_t i = 0; i < std::min(common.jobs.size(), size_t(10)); ++i) {
+            /*for (size_t i = 0; i < common.jobs.size();i++) {
                 const Jobs& job = common.jobs[i];
                 std::cout << "Job " << i + 1 << ": " << std::endl;
                 std::cout << "Title: " << job.title << std::endl;
@@ -156,7 +160,12 @@ std::string DownloadThread::sanitizeDescription(const std::string& desc) {
 
     return sanitized_desc;
 }
-
+std::string DownloadThread::formatNumberWithCommas(int number) {
+    std::stringstream ss;
+    ss.imbue(std::locale(""));
+    ss << std::fixed << number;
+    return ss.str();
+}
 
 
 
