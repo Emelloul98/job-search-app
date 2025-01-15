@@ -74,75 +74,97 @@ void RenderBackgroundImage(CommonObjects* common) {
     );
 
 }
-void RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width) {
-    ImGui::PushID(label);
 
+
+void RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width) {
+
+    ImVec2 screenPos = ImGui::GetCursorScreenPos();
+
+    // Get the current cursor position relative to the window
+    ImVec2 pos = ImGui::GetCursorPos();
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+    ImGui::PushID(label);
     float searchbar_height = 80.0f;
-    float combo_height = ImGui::GetFrameHeight() * 2 + 4;
-    float padding_top = (searchbar_height - combo_height) * 0.5f;
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + padding_top);
+    float padding_top = 10.0f;
+
+    // Calculate label position
+    ImVec2 labelSize = ImGui::CalcTextSize(label);
+    float labelOffsetX = (column_width - labelSize.x) * 0.5f;
+
+    const char* preview = (*selected_item >= 0) ? items[*selected_item] : "Choose...";
+    ImVec2 previewSize = ImGui::CalcTextSize(preview);
+    float previewOffsetX = (column_width - previewSize.x) * 0.5f;
 
     ImGui::BeginGroup();
 
-    ImVec2 rect_min = ImGui::GetCursorScreenPos();
-    float actual_width = column_width - 30;
-    ImVec2 rect_max = ImVec2(rect_min.x + actual_width, rect_min.y + combo_height);
-    float content_start_x = rect_min.x + actual_width * 0.3f;
+    ImGui::SetCursorPos(pos);
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.85f, 0.85f, 0.85f, 0.5f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.75f, 0.75f, 0.75f, 0.5f));
 
-    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);
-    ImGui::SetCursorScreenPos(ImVec2(content_start_x, rect_min.y));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 30.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+
+    bool combo_clicked = ImGui::Button("##combo", ImVec2(column_width - 10, 65.0f));
+
+    ImGui::PopStyleVar(2);
+    ImGui::PopStyleColor(3);
+
+    // Set relative position for the label
+    ImGui::SetCursorPos(ImVec2(pos.x + labelOffsetX, pos.y + padding_top));
+
+    // Add some contrast to make the text visible
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
     ImGui::Text("%s", label);
-    ImGui::PopFont();
+    ImGui::PopStyleColor();
 
+    ImGui::SetCursorPos(ImVec2(pos.x + previewOffsetX, pos.y + padding_top + labelSize.y + 2));
 
-    const char* preview = (*selected_item >= 0) ? items[*selected_item] : "Choose...";
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
-    ImGui::SetCursorScreenPos(ImVec2(content_start_x, rect_min.y + ImGui::GetFrameHeight() + 2));
     ImGui::Text("%s", preview);
     ImGui::PopStyleColor();
 
-    ImVec2 button_rect_min = ImVec2(rect_min.x, rect_min.y - (padding_top*2.0f));
-    ImVec2 button_rect_max = ImVec2(button_rect_min.x + actual_width, button_rect_min.y + combo_height);
 
-    ImGui::SetCursorScreenPos(ImVec2(button_rect_min.x, button_rect_min.y));
-    bool combo_clicked = ImGui::InvisibleButton("##combo", ImVec2(actual_width, combo_height));
-
-    ImU32 rect_color = ImGui::GetColorU32(
-        ImGui::IsItemActive() ? ImVec4(0.75f, 0.75f, 0.75f, 0.5f) :
-        ImGui::IsItemHovered() ? ImVec4(0.85f, 0.85f, 0.85f, 0.5f) :
-        ImVec4(0.9f, 0.9f, 0.9f, 0.0f)
-    );
-
-    ImGui::GetWindowDrawList()->AddRectFilled(button_rect_min, button_rect_max, rect_color, 30.0f);  
-
-    if (label != "Role") {
+    if (label != "Location") {
         ImGui::SameLine();
-        ImGui::GetWindowDrawList()->AddLine(
-            ImVec2(ImGui::GetCursorScreenPos().x + 7, ImGui::GetCursorScreenPos().y + 12),
-            ImVec2(ImGui::GetCursorScreenPos().x + 7, ImGui::GetCursorScreenPos().y + 64),
-            IM_COL32(211, 211, 211, 255),  // Light gray
+        draw_list->AddLine(
+            ImVec2(screenPos.x - 5, screenPos.y + 5),
+            ImVec2(screenPos.x - 5, screenPos.y + 60),
+            IM_COL32(211, 211, 211, 255),
             1.0f
         );
     }
 
-    if (combo_clicked) ImGui::OpenPopup("##popup");
+    if (combo_clicked) ImGui::OpenPopup(label);
+    ImGui::SetNextWindowPos(ImVec2(screenPos.x, screenPos.y + 70));
 
-    ImGui::SetNextWindowPos(ImVec2(rect_min.x, rect_max.y));
-    ImGui::SetNextWindowSize(ImVec2(actual_width, 0));
+    // Calculate the height needed for all items
+    float item_height = ImGui::GetTextLineHeightWithSpacing();
+    float content_height = item_height * items_count;
+    float popup_height = content_height + ImGui::GetStyle().WindowPadding.y * 2;
+    if (popup_height > 200.0f) popup_height = 200.0f;
 
-    if (ImGui::BeginPopup("##popup", ImGuiWindowFlags_NoMove)) {
+    ImGui::SetNextWindowSize(ImVec2(220.0f, popup_height));
+
+    if (ImGui::BeginPopup(label, ImGuiWindowFlags_NoMove)) {
+        ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), false, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+
         for (int i = 0; i < items_count; i++) {
-            ImGui::SetCursorPosX(content_start_x - rect_min.x);
             if (ImGui::Selectable(items[i], i == *selected_item)) {
                 *selected_item = i;
+                ImGui::CloseCurrentPopup(); // Close popup when item is selected
             }
         }
+
+        ImGui::EndChild();
         ImGui::EndPopup();
     }
 
     ImGui::EndGroup();
     ImGui::PopID();
 }
+
 void RenderSearchBar(CommonObjects* common) {
 
     ImVec2 window_size = ImGui::GetIO().DisplaySize;
@@ -189,7 +211,7 @@ void RenderSearchBar(CommonObjects* common) {
     static const char* sorted_by[] = {"Default", "Hybrid", "Date", "Salary", "Relevence"};
 
 
-    //// Set up the main container style
+    // Set up the main container style
     ImGui::PushStyleColor(ImGuiCol_ChildBg, white_bg);
     ImGui::PushStyleColor(ImGuiCol_Button, orange_button);
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.6f, 0.1f, 1.0f));
