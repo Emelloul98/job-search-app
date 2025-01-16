@@ -7,53 +7,25 @@
 #include "myImages.h"
 
 extern ID3D11Device* g_pd3dDevice;
-void DrawAppWindow(void* common_ptr);
-void RenderSearchBar(CommonObjects* common);
-void RenderBackgroundImage(CommonObjects* common);
-void RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width);
-void display_jobs(CommonObjects* common);
-ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels);
-std::vector<Jobs> current_jobs;
-
-const std::unordered_map<std::string, std::string> country_codes = {
-        {"United Kingdom", "gb"},
-        {"United States", "us"},
-        {"Austria", "at"},
-        {"Australia", "au"},
-        {"Belgium", "be"},
-        {"Brazil", "br"},
-        {"Canada", "ca"},
-        {"Switzerland", "ch"},
-        {"Germany", "de"},
-        {"Spain", "es"},
-        {"France", "fr"},
-        {"India", "in"},
-        {"Italy", "it"},
-        {"Mexico", "mx"},
-        {"Netherlands", "nl"},
-        {"New Zealand", "nz"},
-        {"Poland", "pl"},
-        {"Singapore", "sg"},
-        {"South Africa", "za"}
-};
 
 void DrawThread:: operator()(CommonObjects& common) {
-    GuiMain(DrawAppWindow, &common);
+    GuiMain(DrawAppWindow, &common, this);
     common.exit_flag = true;
 }
-void DrawAppWindow(void* common_ptr) {
+void DrawAppWindow(void* common_ptr,void* callerPtr) {
     auto common = static_cast<CommonObjects*>(common_ptr);
-    RenderBackgroundImage(common);
-    RenderSearchBar(common);
+    auto draw_thread = (DrawThread*)callerPtr;
+    draw_thread->RenderBackgroundImage(common);
+    draw_thread->RenderSearchBar(common);
     if (common->job_page_ready) 
     {
-		current_jobs = common->jobs;
+		draw_thread->current_jobs = common->jobs;
 		common->job_page_ready = false;
 		common->display_jobs = true;
     }
-    if(common->display_jobs) display_jobs(common);
+    if(common->display_jobs) draw_thread->display_jobs(common);
 }
-void RenderBackgroundImage(CommonObjects* common) {
+void DrawThread:: RenderBackgroundImage(CommonObjects* common) {
     /*
         Drawing the background image
     */
@@ -76,7 +48,7 @@ void RenderBackgroundImage(CommonObjects* common) {
 }
 
 
-void RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width) {
+void DrawThread:: RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width) {
 
     ImVec2 screenPos = ImGui::GetCursorScreenPos();
 
@@ -165,7 +137,7 @@ void RenderCustomComboBox(const char* label, const char* items[], size_t items_c
     ImGui::PopID();
 }
 
-void RenderSearchBar(CommonObjects* common) {
+void DrawThread:: RenderSearchBar(CommonObjects* common) {
 
     ImVec2 window_size = ImGui::GetIO().DisplaySize;
     float searchbar_width = 960.0f;
@@ -296,7 +268,7 @@ void RenderSearchBar(CommonObjects* common) {
     ImGui::End();
 
 }
-void display_jobs(CommonObjects* common)
+void DrawThread:: display_jobs(CommonObjects* common)
 {
     ImGui::Begin("Job Listings");
     // Create table with columns: #, Title
@@ -364,7 +336,7 @@ void display_jobs(CommonObjects* common)
 *  It use the stb_image library to load the image from memory.
 *  The image is in the form of an unsigned char array in myImages.h file.
 */ 
-ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels) 
+ID3D11ShaderResourceView* DrawThread:: CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels)
 {
     ID3D11ShaderResourceView* texture_view = nullptr;
 

@@ -5,5 +5,33 @@ class DrawThread
 {
 	public:
 		void operator()(CommonObjects& common);
+		void RenderSearchBar(CommonObjects* common);
+		void RenderBackgroundImage(CommonObjects* common);
+		void RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width);
+		void display_jobs(CommonObjects* common);
+		ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels);
+        std::vector<Jobs> current_jobs;
+        const std::unordered_map<std::string, std::string> country_codes = {
+                {"United Kingdom", "gb"},
+                {"United States", "us"},
+                {"Austria", "at"},
+                {"Australia", "au"},
+                {"Belgium", "be"},
+                {"Brazil", "br"},
+                {"Canada", "ca"},
+                {"Switzerland", "ch"},
+                {"Germany", "de"},
+                {"Spain", "es"},
+                {"France", "fr"},
+                {"India", "in"},
+                {"Italy", "it"},
+                {"Mexico", "mx"},
+                {"Netherlands", "nl"},
+                {"New Zealand", "nz"},
+                {"Poland", "pl"},
+                {"Singapore", "sg"},
+                {"South Africa", "za"}
+        };
 };
+void DrawAppWindow(void* common_ptr, void* callerPtr);
 

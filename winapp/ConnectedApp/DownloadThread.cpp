@@ -18,9 +18,7 @@ void DownloadThread::operator()(CommonObjects& common)
             common.cv.wait(lock, [&common]() {
                 return common.start_job_searching.load();
             });
-
 			if (common.exit_flag) return;
-			
             searchJobs(common);
             common.start_job_searching=false;
 			common.job_page_ready = true;
@@ -29,7 +27,6 @@ void DownloadThread::operator()(CommonObjects& common)
           
         }
     }
- 
 }
 
 void DownloadThread::searchJobs(CommonObjects& common)
