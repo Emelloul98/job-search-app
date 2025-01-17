@@ -45,7 +45,7 @@ void DownloadThread::searchJobs(CommonObjects& common)
         try {
             // Parse the raw JSON response
             nlohmann::json response = nlohmann::json::parse(res->body);
-            //common.jobs.clear();
+            common.jobs.clear();
             // Initialize the jobs vector from the response            
             for (const auto& job_data : response["results"]) {
                 Jobs job;

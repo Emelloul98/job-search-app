@@ -19,7 +19,8 @@ void DrawAppWindow(void* common_ptr,void* callerPtr) {
     draw_thread->RenderSearchBar(common);
     if (common->job_page_ready) 
     {
-		draw_thread->current_jobs = common->jobs;
+		/*draw_thread->current_jobs = common->jobs;*/
+        draw_thread->current_jobs.insert(draw_thread->current_jobs.end(), common->jobs.begin(), common->jobs.end());
 		common->job_page_ready = false;
 		common->display_jobs = true;
     }
@@ -319,13 +320,12 @@ void DrawThread:: display_jobs(CommonObjects* common)
     ImGui::SetCursorPosX(button_x);
 
     // Add button to load more jobs
-    if (ImGui::Button("Load More Jobs", ImVec2(button_width, 30.0f)))
+    if (ImGui::Button("More Jobs", ImVec2(button_width, 30.0f)))
     {
         common->current_page++;
         common->start_job_searching = true;
         common->cv.notify_one();
     }
-
     ImGui::End();
 }
 
