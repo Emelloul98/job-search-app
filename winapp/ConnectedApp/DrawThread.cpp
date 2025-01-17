@@ -22,9 +22,9 @@ void DrawAppWindow(void* common_ptr,void* callerPtr) {
 		/*draw_thread->current_jobs = common->jobs;*/
         draw_thread->current_jobs.insert(draw_thread->current_jobs.end(), common->jobs.begin(), common->jobs.end());
 		common->job_page_ready = false;
-		common->display_jobs = true;
+		draw_thread->show_jobs_list = true;
     }
-    if(common->display_jobs) draw_thread->display_jobs(common);
+    if(draw_thread->show_jobs_list) draw_thread->display_jobs(common);
 }
 void DrawThread:: RenderBackgroundImage(CommonObjects* common) {
     /*
@@ -47,9 +47,138 @@ void DrawThread:: RenderBackgroundImage(CommonObjects* common) {
     );
 
 }
+void DrawThread:: RenderSearchBar(CommonObjects* common) {
+
+    ImVec2 window_size = ImGui::GetIO().DisplaySize;
+    float searchbar_width = 960.0f;
+    float center_position = (window_size.x - searchbar_width) * 0.5f;
+    float searchbar_y_pos = 270.0f;
 
 
-void DrawThread:: RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width) {
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(window_size);
+    ImGui::Begin("SearchBarOverlay", nullptr,
+        ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_NoBackground |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoInputs |
+        ImGuiWindowFlags_NoSavedSettings);
+
+    // Style variables
+    const ImVec4 white_bg = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+    const ImVec4 orange_button = ImVec4(1.0f, 0.5f, 0.0f, 1.0f);
+    const ImVec4 black_text = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+    // Static variables for combo boxes
+    static int selected_job_type = -1;
+    static int selected_location = -1;
+    static int selected_sorte = -1;
+    static int selected_field = -1;
+
+    // Define options for each combo box
+    static const char* locations[] = {
+    "United Kingdom", "United States", "Austria", "Australia", "Belgium", 
+    "Brazil", "Canada", "Switzerland", "Germany", "Spain", "France", 
+    "India", "Italy", "Mexico", "Netherlands", "New Zealand", "Poland", 
+    "Singapore", "South Africa"
+    };
+    static const char* fields[] = { "accounting-finance", "it", "sales", "customer-services", "engineering", "hr",
+        "healthcare-nursing", "hospitality-catering", "pr-advertising-marketing", "logistics-warehouse",
+        "teaching", "trade-construction", "admin", "legal", "creative-design", "graduate", "retail",
+        "consultancy", "manufacturing", "scientific-qa", "social-work", "travel", "energy-oil-gas",
+        "property", "charity-voluntary", "domestic-help-cleaning", "maintenance", "part-time",
+        "other-general" 
+    };
+    static const char* job_types[] = {"All", "Full Time", "Part Time"};
+    static const char* sorted_by[] = {"Date", "Salary", "Relevance"};
+
+
+    // Set up the main container style
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, white_bg);
+    ImGui::PushStyleColor(ImGuiCol_Button, orange_button);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.6f, 0.1f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Text, black_text);
+    ImGui::PushStyleColor(ImGuiCol_PopupBg, white_bg);
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, white_bg);
+
+    // Remove frame and round edges
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 25.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(15, 8));
+
+
+    // Center the SearchBar
+    
+    ImGui::SetCursorPosX(center_position);
+    ImGui::SetCursorPosY(searchbar_y_pos); 
+
+
+    // Begin main container
+    ImGui::BeginChild("SearchBar", ImVec2(searchbar_width, 80), true,
+        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar);
+
+    ImGui::BeginGroup();
+    ImGui::Columns(5, nullptr, false);
+
+    float column_width = 220;
+    float button_column_width = 60;  // Width for the button column
+
+    // Location Column
+    ImGui::SetColumnWidth(0, column_width);
+    RenderCustomComboBox("Location", locations, IM_ARRAYSIZE(locations), &selected_location, column_width);
+
+    // Job Type Column
+    ImGui::NextColumn();
+    ImGui::SetColumnWidth(1, column_width);
+  
+    RenderCustomComboBox("Field", fields, IM_ARRAYSIZE(fields), &selected_field, column_width);
+
+    // Field Column
+    ImGui::NextColumn();
+
+    ImGui::SetColumnWidth(2, column_width);
+    RenderCustomComboBox("Job Type", job_types, IM_ARRAYSIZE(job_types), &selected_job_type, column_width);
+
+    // Role Column
+    ImGui::NextColumn();
+    ImGui::SetColumnWidth(3, column_width);
+    RenderCustomComboBox("Sorted by", sorted_by, IM_ARRAYSIZE(sorted_by), &selected_sorte, column_width);
+
+    // Move button inside the group, after the last column
+    ImGui::NextColumn();
+    ImGui::SetColumnWidth(4, button_column_width);
+    float button_size = 40.0f;
+    float searchbar_height = 80.0f;
+    float button_y = (searchbar_height - button_size) * 0.5f;
+
+    ImGui::PopStyleVar(3);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, button_size / 2.0f); 
+
+    ImGui::SetCursorPosY(button_y); // Only adjust Y position
+    if (ImGui::Button("S", ImVec2(button_size, button_size))) {
+        if (selected_job_type != -1 && selected_sorte != -1 && selected_field != -1 && selected_location != -1) {
+            
+            common->country = country_codes.at(locations[selected_location]);
+			common->field = fields[selected_field];
+			common->job_type = job_types[selected_job_type];
+            common->sorted_by = sorted_by[selected_sorte];
+
+            common->start_job_searching=true;
+            common->cv.notify_one();  
+
+        }
+    }
+   
+    ImGui::EndGroup();
+    ImGui::EndChild();
+
+    // Pop all style modifications
+    ImGui::PopStyleVar();
+    ImGui::PopStyleColor(6);
+    ImGui::End();
+
+}
+void DrawThread::RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width) {
 
     ImVec2 screenPos = ImGui::GetCursorScreenPos();
 
@@ -138,177 +267,57 @@ void DrawThread:: RenderCustomComboBox(const char* label, const char* items[], s
     ImGui::PopID();
 }
 
-void DrawThread:: RenderSearchBar(CommonObjects* common) {
 
-    ImVec2 window_size = ImGui::GetIO().DisplaySize;
-    float searchbar_width = 960.0f;
-    float center_position = (window_size.x - searchbar_width) * 0.5f;
-    float searchbar_y_pos = 270.0f;
-
-
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::SetNextWindowSize(window_size);
-    ImGui::Begin("SearchBarOverlay", nullptr,
-        ImGuiWindowFlags_NoDecoration |
-        ImGuiWindowFlags_NoBackground |
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoInputs |
-        ImGuiWindowFlags_NoSavedSettings);
-
-    // Style variables
-    const ImVec4 white_bg = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-    const ImVec4 orange_button = ImVec4(1.0f, 0.5f, 0.0f, 1.0f);
-    const ImVec4 black_text = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-
-    // Static variables for combo boxes
-    static int selected_job_type = -1;
-    static int selected_location = -1;
-    static int selected_sorte = -1;
-    static int selected_field = -1;
-
-    // Define options for each combo box
-    static const char* locations[] = {
-    "United Kingdom", "United States", "Austria", "Australia", "Belgium", 
-    "Brazil", "Canada", "Switzerland", "Germany", "Spain", "France", 
-    "India", "Italy", "Mexico", "Netherlands", "New Zealand", "Poland", 
-    "Singapore", "South Africa"
-    };
-    static const char* fields[] = { "accounting-finance", "it", "sales", "customer-services", "engineering", "hr",
-        "healthcare-nursing", "hospitality-catering", "pr-advertising-marketing", "logistics-warehouse",
-        "teaching", "trade-construction", "admin", "legal", "creative-design", "graduate", "retail",
-        "consultancy", "manufacturing", "scientific-qa", "social-work", "travel", "energy-oil-gas",
-        "property", "charity-voluntary", "domestic-help-cleaning", "maintenance", "part-time",
-        "other-general" 
-    };
-    static const char* job_types[] = {"All", "Full Time", "Part Time"};
-    static const char* sorted_by[] = {"Default", "Hybrid", "Date", "Salary", "Relevence"};
-
-
-    // Set up the main container style
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, white_bg);
-    ImGui::PushStyleColor(ImGuiCol_Button, orange_button);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.6f, 0.1f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_Text, black_text);
-    ImGui::PushStyleColor(ImGuiCol_PopupBg, white_bg);
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, white_bg);
-
-    // Remove frame and round edges
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 25.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(15, 8));
-
-
-    // Center the SearchBar
-    
-    ImGui::SetCursorPosX(center_position);
-    ImGui::SetCursorPosY(searchbar_y_pos); 
-
-
-    // Begin main container
-    ImGui::BeginChild("SearchBar", ImVec2(searchbar_width, 80), true,
-        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar);
-
-    ImGui::BeginGroup();
-    ImGui::Columns(5, nullptr, false);
-
-    float column_width = 220;
-    float button_column_width = 60;  // Width for the button column
-
-    // Location Column
-    ImGui::SetColumnWidth(0, column_width);
-    RenderCustomComboBox("Location", locations, IM_ARRAYSIZE(locations), &selected_location, column_width);
-
-    // Job Type Column
-    ImGui::NextColumn();
-    ImGui::SetColumnWidth(1, column_width);
-  
-    RenderCustomComboBox("Field", fields, IM_ARRAYSIZE(fields), &selected_field, column_width);
-
-    // Field Column
-    ImGui::NextColumn();
-
-    ImGui::SetColumnWidth(2, column_width);
-    RenderCustomComboBox("Job Type", job_types, IM_ARRAYSIZE(job_types), &selected_job_type, column_width);
-
-    // Role Column
-    ImGui::NextColumn();
-    ImGui::SetColumnWidth(3, column_width);
-    RenderCustomComboBox("Sorted by", sorted_by, IM_ARRAYSIZE(sorted_by), &selected_sorte, column_width);
-
-    // Move button inside the group, after the last column
-    ImGui::NextColumn();
-    ImGui::SetColumnWidth(4, button_column_width);
-    float button_size = 40.0f;
-    float searchbar_height = 80.0f;
-    float button_y = (searchbar_height - button_size) * 0.5f;
-
-    ImGui::PopStyleVar(3);
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, button_size / 2.0f); 
-
-    ImGui::SetCursorPosY(button_y); // Only adjust Y position
-    if (ImGui::Button("S", ImVec2(button_size, button_size))) {
-        if (selected_job_type != -1 && selected_sorte != -1 && selected_field != -1 && selected_location != -1) {
-            
-            common->country = country_codes.at(locations[selected_location]);
-			common->field = fields[selected_field];
-			common->job_type = job_types[selected_job_type];
-            common->sorted_by = sorted_by[selected_sorte];
-
-            common->start_job_searching=true;
-            common->cv.notify_one();  
-
-        }
-    }
-   
-    ImGui::EndGroup();
-    ImGui::EndChild();
-
-    // Pop all style modifications
-    ImGui::PopStyleVar();
-    ImGui::PopStyleColor(6);
-    ImGui::End();
-
-}
-void DrawThread:: display_jobs(CommonObjects* common)
+void DrawThread::display_jobs(CommonObjects* common)
 {
-    ImGui::Begin("Job Listings");
-    // Create table with columns: #, Title
-    if (ImGui::BeginTable("JobTable", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
+    ImVec2 mainViewportSize = ImGui::GetMainViewport()->Size;
+    ImVec2 windowSize = ImVec2(mainViewportSize.x * 0.8f, mainViewportSize.y * 0.8f);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Appearing);
+    ImGui::Begin("Job Listings", &show_jobs_list);
+    if (ImGui::BeginTable("JobTable", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
     {
         // Table headers
-        ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+        ImGui::TableSetupColumn("num", ImGuiTableColumnFlags_WidthFixed, 50.0f);
         ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Company", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Location", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableHeadersRow();
 
         // Iterate over the jobs and create rows in the table
         for (size_t i = 0; i < current_jobs.size(); ++i)
         {
-            Jobs& job = current_jobs[i]; 
+            Jobs& job = current_jobs[i];
             // Begin a table row
             ImGui::TableNextRow();
 
             // Display job number
-            ImGui::TableNextColumn();
-            ImGui::Text("%zu", i + 1);
-
-            // Display job title with a toggle to expand/collapse details
-            ImGui::TableNextColumn();
-            if (ImGui::TreeNodeEx(job.title.c_str(), job.is_expanded ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+            ImGui::TableNextColumn();  // Display job number in the "num" column
+            if (ImGui::TreeNodeEx((std::to_string(i + 1)).c_str(), job.is_expanded ? ImGuiTreeNodeFlags_DefaultOpen : 0))
             {
-                // Display job details when expanded
-                ImGui::Text("Company: %s", job.company.c_str());
-                ImGui::Text("Location: %s", job.location.c_str());
-                ImGui::Text("Salary: %s", job.salary.c_str());
+                // Display expanded job details
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", job.title.c_str());
                 ImGui::TextWrapped("Description: %s", job.description.c_str());
                 ImGui::Text("Posted on: %s", job.created_date.c_str());
                 ImGui::Text("URL: %s", job.url.c_str());
                 ImGui::TreePop();
-                job.is_expanded = true;  
+                job.is_expanded = true;
             }
             else
             {
-                job.is_expanded = false;  
+                job.is_expanded = false;
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", job.title.c_str());
             }
+            ImGui::TableNextColumn();  // Display company name in the "Company" column
+            ImGui::Text("%s", job.company.c_str());
+
+            ImGui::TableNextColumn();  // Display location in the "Location" column
+            ImGui::Text("%s", job.location.c_str());
+
+            ImGui::TableNextColumn();  // Display salary in the "Salary" column
+            ImGui::Text("%s", job.salary.c_str());
         }
 
         ImGui::EndTable();
@@ -326,10 +335,89 @@ void DrawThread:: display_jobs(CommonObjects* common)
         common->start_job_searching = true;
         common->cv.notify_one();
     }
+
     ImGui::End();
 }
 
 
+
+//void DrawThread::display_jobs(CommonObjects* common)
+//{
+//    ImVec2 mainViewportSize = ImGui::GetMainViewport()->Size;
+//    ImVec2 windowSize = ImVec2(mainViewportSize.x * 0.8f, mainViewportSize.y * 0.8f);
+//    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Appearing);
+//    ImGui::Begin("Job Listings", &show_jobs_list);
+//
+//    // Create table with columns: num, Title, Company, Location, Salary
+//    if (ImGui::BeginTable("JobTable", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
+//    {
+//        // Table headers
+//        ImGui::TableSetupColumn("num", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+//        ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch);
+//        ImGui::TableSetupColumn("Company", ImGuiTableColumnFlags_WidthStretch);
+//        ImGui::TableSetupColumn("Location", ImGuiTableColumnFlags_WidthStretch);
+//        ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthStretch);
+//        ImGui::TableHeadersRow();
+//
+//        // Iterate over the jobs and create rows in the table
+//        for (size_t i = 0; i < current_jobs.size(); ++i)
+//        {
+//            Jobs& job = current_jobs[i];
+//            // Begin a table row
+//            ImGui::TableNextRow();
+//
+//            // Display job number
+//            //ImGui::TableNextColumn();
+//            if (ImGui::TreeNodeEx((std::to_string(i + 1)).c_str(), job.is_expanded ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+//            {
+//                // Display expanded job details
+//                ImGui::TextWrapped("Description: %s", job.description.c_str());
+//                ImGui::Text("Posted on: %s", job.created_date.c_str());
+//                ImGui::Text("URL: %s", job.url.c_str());
+//                ImGui::TreePop();
+//                job.is_expanded = true;
+//            }
+//            else
+//            {
+//                job.is_expanded = false;
+//            }
+//
+//            // Display the job details in the table (not expanded)
+//            ImGui::TableNextColumn();  // Display job number in the "num" column
+//            ImGui::Text("%d", i + 1);
+//
+//            ImGui::TableNextColumn();  // Display job title in the "Title" column
+//            ImGui::Text("%s", job.title.c_str());
+//
+//            ImGui::TableNextColumn();  // Display company name in the "Company" column
+//            ImGui::Text("%s", job.company.c_str());
+//
+//            ImGui::TableNextColumn();  // Display location in the "Location" column
+//            ImGui::Text("%s", job.location.c_str());
+//
+//            ImGui::TableNextColumn();  // Display salary in the "Salary" column
+//            ImGui::Text("%s", job.salary.c_str());
+//        }
+//
+//        ImGui::EndTable();
+//    }
+//
+//    // Calculate the button position
+//    float window_width = ImGui::GetWindowSize().x;
+//    float button_width = 120.0f; // Width of the button
+//    float button_x = (window_width - button_width) * 0.5f; // Center the button horizontally
+//    ImGui::SetCursorPosX(button_x);
+//
+//    // Add button to load more jobs
+//    if (ImGui::Button("More Jobs", ImVec2(button_width, 30.0f)))
+//    {
+//        common->current_page++;
+//        common->start_job_searching = true;
+//        common->cv.notify_one();
+//    }
+//
+//    ImGui::End();
+//}
 
 /*
 *  This code creates a texture from an image that is in the memory!

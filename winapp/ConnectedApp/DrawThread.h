@@ -32,6 +32,7 @@ class DrawThread
                 {"Singapore", "sg"},
                 {"South Africa", "za"}
         };
+        bool show_jobs_list = false;
 };
 void DrawAppWindow(void* common_ptr, void* callerPtr);
 

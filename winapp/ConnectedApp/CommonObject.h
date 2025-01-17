@@ -23,7 +23,6 @@ struct CommonObjects
 	std::atomic_bool exit_flag = false;
 	std::atomic_bool start_job_searching = false;
 	std::atomic_bool job_page_ready = false;
-	std::atomic_bool display_jobs = false;
 	std::string url;
 	std::vector<Jobs> jobs;
 	std::mutex mtx;
@@ -32,5 +31,5 @@ struct CommonObjects
 	std::string field;
 	std::string job_type;
 	std::string sorted_by;
-	std::atomic<int> current_page = 1;
+	std::atomic_int current_page = 1;
 };
