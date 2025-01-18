@@ -1,12 +1,12 @@
 #pragma once
 #include "CommonObject.h"
-
+#include <iostream>
 class DownloadThread
 {
 public:
 	void operator()(CommonObjects& common);
-	void SetUrl(std::string_view new_url);
-private:
-	std::string _download_url;
+	void searchJobs(CommonObjects& common);
+	std::string sanitizeDescription(const std::string& description);
+	std::string formatNumberWithCommas(int number);
 };
 

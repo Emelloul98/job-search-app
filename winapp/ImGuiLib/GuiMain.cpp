@@ -119,7 +119,7 @@ std::string reverse_utf8(const std::string_view input) {
 
 // Main code
 
-int GuiMain(drawcallback drawfunction, void* obj_ptr)
+int GuiMain(drawcallback drawfunction, void* obj_ptr,void* callerPtr)
 {
     // Create application window
     //ImGui_ImplWin32_EnableDpiAwareness();
@@ -223,7 +223,7 @@ int GuiMain(drawcallback drawfunction, void* obj_ptr)
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        drawfunction(obj_ptr);
+        drawfunction(obj_ptr,callerPtr);
 
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()!
         // You can browse its code to learn more about Dear ImGui!).
