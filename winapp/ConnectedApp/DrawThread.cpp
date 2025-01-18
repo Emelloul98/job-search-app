@@ -274,22 +274,216 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
     ImGui::PopID();
 }
 
+//void DrawThread::display_jobs(CommonObjects* common)
+//{
+//    ImVec2 mainViewportSize = ImGui::GetMainViewport()->Size;
+//    ImVec2 windowSize = ImVec2(mainViewportSize.x * 0.8f, mainViewportSize.y * 0.8f);
+//    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Appearing);
+//    ImGui::Begin("Job Listings", &show_jobs_list);
+//
+//    // Add a table with 6 columns (including the new Star column)
+//    if (ImGui::BeginTable("JobTable", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
+//    {
+//        // Table headers
+//        ImGui::TableSetupColumn("num", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+//        ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch);
+//        ImGui::TableSetupColumn("Company", ImGuiTableColumnFlags_WidthStretch);
+//        ImGui::TableSetupColumn("Location", ImGuiTableColumnFlags_WidthStretch);
+//        ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthStretch);
+//        ImGui::TableSetupColumn("Star", ImGuiTableColumnFlags_WidthFixed, 30.0f);
+//        ImGui::TableHeadersRow();
+//
+//        // Iterate over the jobs and create rows in the table
+//        for (size_t i = 0; i < current_jobs.size(); ++i)
+//        {
+//            Jobs& job = current_jobs[i];
+//            ImGui::TableNextRow();
+//            // Display job number
+//            ImGui::TableNextColumn();
+//
+//            if (ImGui::TreeNodeEx((std::to_string(i + 1)).c_str(), job.is_expanded ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+//            {
+//                ImGui::TableNextColumn();
+//                ImGui::Text("%s", job.title.c_str());
+//                ImGui::TextWrapped("Description: %s", job.description.c_str());
+//                ImGui::Text("Posted on: %s", job.created_date.c_str());
+//                ImGui::Text("URL: %s", job.url.c_str());
+//                ImGui::TreePop();
+//                job.is_expanded = true;
+//            }
+//            else
+//            {
+//                job.is_expanded = false;
+//                ImGui::TableNextColumn();
+//                ImGui::Text("%s", job.title.c_str());
+//            }
+//
+//            // Display the rest of the columns
+//            ImGui::TableNextColumn();
+//            ImGui::Text("%s", job.company.c_str());
+//
+//            ImGui::TableNextColumn();
+//            ImGui::Text("%s", job.location.c_str());
+//
+//            ImGui::TableNextColumn();
+//            ImGui::Text("%s", job.salary.c_str());
+//            // Star column
+//            ImGui::TableNextColumn();
+//            std::string star_id = "star_button_" + std::to_string(i+1);
+//            StarButton(star_id.c_str(), job.is_starred);
+//
+//        }
+//
+//        ImGui::EndTable();
+//    }
+//
+//    // Calculate the button position
+//    float window_width = ImGui::GetWindowSize().x;
+//    float button_width = 120.0f; // Width of the button
+//    float button_x = (window_width - button_width) * 0.5f; // Center the button horizontally
+//    ImGui::SetCursorPosX(button_x);
+//
+//    // Add button to load more jobs
+//    if (jobsButton("More Jobs",button_width))
+//    {
+//        common->current_page++;
+//        common->start_job_searching = true;
+//        common->cv.notify_one();
+//    }
+//    ImGui::End();
+//}
+
+
+//void DrawThread::display_jobs(CommonObjects* common)
+//{
+//    ImVec2 mainViewportSize = ImGui::GetMainViewport()->Size;
+//    ImVec2 windowSize = ImVec2(mainViewportSize.x * 0.8f, mainViewportSize.y * 0.8f);
+//    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Appearing);
+//    ImGui::Begin("Job Listings", &show_jobs_list);
+//
+//    static int selected_job = -1;  // Track which job was clicked
+//    bool open_popup = false;       // Flag to open popup
+//
+//    if (ImGui::BeginTable("JobTable", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
+//    {
+//        // Table headers
+//        ImGui::TableSetupColumn("num", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+//        ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch);
+//        ImGui::TableSetupColumn("Company", ImGuiTableColumnFlags_WidthStretch);
+//        ImGui::TableSetupColumn("Location", ImGuiTableColumnFlags_WidthStretch);
+//        ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthStretch);
+//        ImGui::TableSetupColumn("Star", ImGuiTableColumnFlags_WidthFixed, 30.0f);
+//        ImGui::TableHeadersRow();
+//
+//        // Iterate over the jobs and create rows in the table
+//        for (size_t i = 0; i < current_jobs.size(); ++i)
+//        {
+//            Jobs& job = current_jobs[i];
+//            ImGui::TableNextRow();
+//
+//            // Display job number
+//            ImGui::TableNextColumn();
+//            ImGui::Text("%zu", i + 1);
+//
+//            // Title column with clickable behavior
+//            ImGui::TableNextColumn();
+//            if (ImGui::Selectable(job.title.c_str(), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick))
+//            {
+//                selected_job = i;
+//                open_popup = true;
+//            }
+//
+//            // Display the rest of the columns
+//            ImGui::TableNextColumn();
+//            ImGui::Text("%s", job.company.c_str());
+//            ImGui::TableNextColumn();
+//            ImGui::Text("%s", job.location.c_str());
+//            ImGui::TableNextColumn();
+//            ImGui::Text("%s", job.salary.c_str());
+//            ImGui::TableNextColumn();
+//            std::string star_id = "star_button_" + std::to_string(i + 1);
+//            StarButton(star_id.c_str(), job.is_starred);
+//        }
+//        ImGui::EndTable();
+//    }
+//
+//    // Handle popup
+//    if (open_popup)
+//    {
+//        ImGui::OpenPopup("Job Details");
+//    }
+//
+//    // Center popup in the middle of the window
+//    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+//    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+//
+//    if (ImGui::BeginPopupModal("Job Details", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+//    {
+//        if (selected_job >= 0 && selected_job < current_jobs.size())
+//        {
+//            Jobs& job = current_jobs[selected_job];
+//
+//            ImGui::Text("Title: %s", job.title.c_str());
+//            ImGui::Separator();
+//
+//            ImGui::Text("Company: %s", job.company.c_str());
+//            ImGui::Text("Location: %s", job.location.c_str());
+//            ImGui::Text("Salary: %s", job.salary.c_str());
+//            ImGui::Text("Posted on: %s", job.created_date.c_str());
+//
+//            ImGui::Separator();
+//            ImGui::Text("Description:");
+//            ImGui::BeginChild("Description", ImVec2(500, 200), true);
+//            ImGui::TextWrapped("%s", job.description.c_str());
+//            ImGui::EndChild();
+//
+//            ImGui::Text("URL: %s", job.url.c_str());
+//
+//            ImGui::Separator();
+//            if (ImGui::Button("Close", ImVec2(120, 0)))
+//            {
+//                ImGui::CloseCurrentPopup();
+//            }
+//        }
+//        ImGui::EndPopup();
+//    }
+
+    //  Calculate the button position
+//    float window_width = ImGui::GetWindowSize().x;
+//    float button_width = 120.0f; // Width of the button
+//    float button_x = (window_width - button_width) * 0.5f; // Center the button horizontally
+//    ImGui::SetCursorPosX(button_x);
+//
+//    // Add button to load more jobs
+//    if (jobsButton("More Jobs",button_width))
+//    {
+//        common->current_page++;
+//        common->start_job_searching = true;
+//        common->cv.notify_one();
+//    }
+//
+//    ImGui::End();
+//}
+
+
 void DrawThread::display_jobs(CommonObjects* common)
 {
     ImVec2 mainViewportSize = ImGui::GetMainViewport()->Size;
     ImVec2 windowSize = ImVec2(mainViewportSize.x * 0.8f, mainViewportSize.y * 0.8f);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_Appearing);
-    ImGui::Begin("Job Listings", &show_jobs_list);
+    ImGui::Begin("Job Finder", &show_jobs_list);
 
-    // Add a table with 6 columns (including the new Star column)
+    static int selected_job = -1;  // Track which job was clicked
+    bool open_popup = false;       // Flag to open popup
+
     if (ImGui::BeginTable("JobTable", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
     {
         // Table headers
-        ImGui::TableSetupColumn("num", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+        ImGui::TableSetupColumn("num", ImGuiTableColumnFlags_WidthFixed, 30.0f);
         ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Company", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Location", ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthFixed, 70.0f);
         ImGui::TableSetupColumn("Star", ImGuiTableColumnFlags_WidthFixed, 30.0f);
         ImGui::TableHeadersRow();
 
@@ -298,50 +492,90 @@ void DrawThread::display_jobs(CommonObjects* common)
         {
             Jobs& job = current_jobs[i];
             ImGui::TableNextRow();
+
             // Display job number
             ImGui::TableNextColumn();
-            if (ImGui::TreeNodeEx((std::to_string(i + 1)).c_str(), job.is_expanded ? ImGuiTreeNodeFlags_DefaultOpen : 0))
+            ImGui::Text("%zu", i + 1);
+
+            // Title column with clickable behavior
+            ImGui::TableNextColumn();
+            float wrap_width = ImGui::GetContentRegionAvail().x;
+            ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + wrap_width);  // Start text wrapping
+            if (ImGui::Selectable(job.title.c_str(), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick))
             {
-                ImGui::TableNextColumn();
-                ImGui::Text("%s", job.title.c_str());
-                ImGui::TextWrapped("Description: %s", job.description.c_str());
-                ImGui::Text("Posted on: %s", job.created_date.c_str());
-                ImGui::Text("URL: %s", job.url.c_str());
-                ImGui::TreePop();
-                job.is_expanded = true;
+                selected_job = i;
+                open_popup = true;
             }
-            else
-            {
-                job.is_expanded = false;
-                ImGui::TableNextColumn();
-                ImGui::Text("%s", job.title.c_str());
-            }
+            ImGui::PopTextWrapPos();
 
             // Display the rest of the columns
             ImGui::TableNextColumn();
-            ImGui::Text("%s", job.company.c_str());
+            ImGui::TextWrapped("%s", job.company.c_str());
+            ImGui::TableNextColumn();
+            ImGui::TextWrapped("%s", job.location.c_str());
+            ImGui::TableNextColumn();
+            ImGui::TextWrapped("%s", job.salary.c_str());
 
             ImGui::TableNextColumn();
-            ImGui::Text("%s", job.location.c_str());
-
-            ImGui::TableNextColumn();
-            ImGui::Text("%s", job.salary.c_str());
-            // Star column
-            ImGui::TableNextColumn();
-            std::string star_id = "star_button_" + std::to_string(i+1);
+            std::string star_id = "star_button_" + std::to_string(i + 1);
             StarButton(star_id.c_str(), job.is_starred);
-
         }
-
         ImGui::EndTable();
     }
 
-    // Calculate the button position
+    // Handle popup
+    if (open_popup)
+    {
+        ImGui::OpenPopup("Job Details");
+    }
+
+    // Center popup in the middle of the window
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+    bool job_details_is_open = true;
+    // Set fixed size for popup
+    ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_Always);
+    if (ImGui::BeginPopupModal("Job Details", &job_details_is_open, ImGuiWindowFlags_NoResize))
+    {
+
+        // Begin a child window that will contain all content with vertical scrolling
+        ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true);
+        if (selected_job >= 0 && selected_job < current_jobs.size())
+        {
+            Jobs& job = current_jobs[selected_job];
+
+            ImGui::Text("Title: %s", job.title.c_str());
+            ImGui::Separator();
+
+            ImGui::Text("Company: %s", job.company.c_str());
+            ImGui::Text("Location: %s", job.location.c_str());
+            ImGui::Text("Salary: %s", job.salary.c_str());
+            ImGui::Text("Posted on: %s", job.created_date.c_str());
+
+            ImGui::Separator();
+            ImGui::Text("Description:");
+            ImGui::TextWrapped("%s", job.description.c_str());
+
+            ImGui::Separator();
+            ImGui::TextWrapped("URL: %s", job.url.c_str());
+           
+        }
+        ImGui::EndChild();
+
+        // Place the Close button outside the scrolling region, at the bottom of the popup
+        if (ImGui::Button("Close", ImVec2(120, 0)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
     float window_width = ImGui::GetWindowSize().x;
     float button_width = 120.0f; // Width of the button
     float button_x = (window_width - button_width) * 0.5f; // Center the button horizontally
     ImGui::SetCursorPosX(button_x);
-
+    
     // Add button to load more jobs
     if (jobsButton("More Jobs",button_width))
     {
@@ -349,8 +583,11 @@ void DrawThread::display_jobs(CommonObjects* common)
         common->start_job_searching = true;
         common->cv.notify_one();
     }
+    
+   
     ImGui::End();
 }
+
 
 bool DrawThread::StarButton(const char* id, bool& is_starred)
 {
