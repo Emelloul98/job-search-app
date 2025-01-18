@@ -1,10 +1,10 @@
 #include "DrawThread.h"
 #include "GuiMain.h"
-#include "../../shared/ImGuiSrc/imgui.h"
 #include <iostream>
 #include <d3d11.h>
 #include "stb_image.h"
 #include "myImages.h"
+#define IM_PI 3.14159265358979323846f
 
 extern ID3D11Device* g_pd3dDevice;
 
@@ -26,6 +26,7 @@ void DrawAppWindow(void* common_ptr,void* callerPtr) {
     }
     if(draw_thread->show_jobs_list) draw_thread->display_jobs(common);
 }
+
 void DrawThread:: RenderBackgroundImage(CommonObjects* common) {
     /*
         Drawing the background image
@@ -47,6 +48,7 @@ void DrawThread:: RenderBackgroundImage(CommonObjects* common) {
     );
 
 }
+
 void DrawThread:: RenderSearchBar(CommonObjects* common) {
 
     ImVec2 window_size = ImGui::GetIO().DisplaySize;
@@ -178,6 +180,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     ImGui::End();
 
 }
+
 void DrawThread::RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width) {
 
     ImVec2 screenPos = ImGui::GetCursorScreenPos();
@@ -267,14 +270,15 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
     ImGui::PopID();
 }
 
-
 void DrawThread::display_jobs(CommonObjects* common)
 {
     ImVec2 mainViewportSize = ImGui::GetMainViewport()->Size;
     ImVec2 windowSize = ImVec2(mainViewportSize.x * 0.8f, mainViewportSize.y * 0.8f);
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_Appearing);
     ImGui::Begin("Job Listings", &show_jobs_list);
-    if (ImGui::BeginTable("JobTable", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
+
+    // Add a table with 6 columns (including the new Star column)
+    if (ImGui::BeginTable("JobTable", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
     {
         // Table headers
         ImGui::TableSetupColumn("num", ImGuiTableColumnFlags_WidthFixed, 50.0f);
@@ -282,20 +286,18 @@ void DrawThread::display_jobs(CommonObjects* common)
         ImGui::TableSetupColumn("Company", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Location", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Star", ImGuiTableColumnFlags_WidthFixed, 30.0f);
         ImGui::TableHeadersRow();
 
         // Iterate over the jobs and create rows in the table
         for (size_t i = 0; i < current_jobs.size(); ++i)
         {
             Jobs& job = current_jobs[i];
-            // Begin a table row
             ImGui::TableNextRow();
-
             // Display job number
-            ImGui::TableNextColumn();  // Display job number in the "num" column
+            ImGui::TableNextColumn();
             if (ImGui::TreeNodeEx((std::to_string(i + 1)).c_str(), job.is_expanded ? ImGuiTreeNodeFlags_DefaultOpen : 0))
             {
-                // Display expanded job details
                 ImGui::TableNextColumn();
                 ImGui::Text("%s", job.title.c_str());
                 ImGui::TextWrapped("Description: %s", job.description.c_str());
@@ -310,18 +312,26 @@ void DrawThread::display_jobs(CommonObjects* common)
                 ImGui::TableNextColumn();
                 ImGui::Text("%s", job.title.c_str());
             }
-            ImGui::TableNextColumn();  // Display company name in the "Company" column
+
+            // Display the rest of the columns
+            ImGui::TableNextColumn();
             ImGui::Text("%s", job.company.c_str());
 
-            ImGui::TableNextColumn();  // Display location in the "Location" column
+            ImGui::TableNextColumn();
             ImGui::Text("%s", job.location.c_str());
 
-            ImGui::TableNextColumn();  // Display salary in the "Salary" column
+            ImGui::TableNextColumn();
             ImGui::Text("%s", job.salary.c_str());
+            // Star column
+            ImGui::TableNextColumn();
+            std::string star_id = "star_button_" + std::to_string(i+1);
+            StarButton(star_id.c_str(), job.is_starred);
+
         }
 
         ImGui::EndTable();
     }
+
     // Calculate the button position
     float window_width = ImGui::GetWindowSize().x;
     float button_width = 120.0f; // Width of the button
@@ -339,85 +349,52 @@ void DrawThread::display_jobs(CommonObjects* common)
     ImGui::End();
 }
 
+bool DrawThread::StarButton(const char* id, bool& is_starred)
+{
+    ImGui::PushID(id);
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    ImVec2 p = ImGui::GetCursorScreenPos();
+    float size = ImGui::GetFrameHeight();
+    ImVec2 center = ImVec2(p.x + size * 0.5f, p.y + size * 0.5f);
 
+    ImGui::InvisibleButton("star_button", ImVec2(size, size));
+    bool hovered = ImGui::IsItemHovered();
+    bool clicked = ImGui::IsItemClicked();
 
-//void DrawThread::display_jobs(CommonObjects* common)
-//{
-//    ImVec2 mainViewportSize = ImGui::GetMainViewport()->Size;
-//    ImVec2 windowSize = ImVec2(mainViewportSize.x * 0.8f, mainViewportSize.y * 0.8f);
-//    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Appearing);
-//    ImGui::Begin("Job Listings", &show_jobs_list);
-//
-//    // Create table with columns: num, Title, Company, Location, Salary
-//    if (ImGui::BeginTable("JobTable", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
-//    {
-//        // Table headers
-//        ImGui::TableSetupColumn("num", ImGuiTableColumnFlags_WidthFixed, 50.0f);
-//        ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch);
-//        ImGui::TableSetupColumn("Company", ImGuiTableColumnFlags_WidthStretch);
-//        ImGui::TableSetupColumn("Location", ImGuiTableColumnFlags_WidthStretch);
-//        ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthStretch);
-//        ImGui::TableHeadersRow();
-//
-//        // Iterate over the jobs and create rows in the table
-//        for (size_t i = 0; i < current_jobs.size(); ++i)
-//        {
-//            Jobs& job = current_jobs[i];
-//            // Begin a table row
-//            ImGui::TableNextRow();
-//
-//            // Display job number
-//            //ImGui::TableNextColumn();
-//            if (ImGui::TreeNodeEx((std::to_string(i + 1)).c_str(), job.is_expanded ? ImGuiTreeNodeFlags_DefaultOpen : 0))
-//            {
-//                // Display expanded job details
-//                ImGui::TextWrapped("Description: %s", job.description.c_str());
-//                ImGui::Text("Posted on: %s", job.created_date.c_str());
-//                ImGui::Text("URL: %s", job.url.c_str());
-//                ImGui::TreePop();
-//                job.is_expanded = true;
-//            }
-//            else
-//            {
-//                job.is_expanded = false;
-//            }
-//
-//            // Display the job details in the table (not expanded)
-//            ImGui::TableNextColumn();  // Display job number in the "num" column
-//            ImGui::Text("%d", i + 1);
-//
-//            ImGui::TableNextColumn();  // Display job title in the "Title" column
-//            ImGui::Text("%s", job.title.c_str());
-//
-//            ImGui::TableNextColumn();  // Display company name in the "Company" column
-//            ImGui::Text("%s", job.company.c_str());
-//
-//            ImGui::TableNextColumn();  // Display location in the "Location" column
-//            ImGui::Text("%s", job.location.c_str());
-//
-//            ImGui::TableNextColumn();  // Display salary in the "Salary" column
-//            ImGui::Text("%s", job.salary.c_str());
-//        }
-//
-//        ImGui::EndTable();
-//    }
-//
-//    // Calculate the button position
-//    float window_width = ImGui::GetWindowSize().x;
-//    float button_width = 120.0f; // Width of the button
-//    float button_x = (window_width - button_width) * 0.5f; // Center the button horizontally
-//    ImGui::SetCursorPosX(button_x);
-//
-//    // Add button to load more jobs
-//    if (ImGui::Button("More Jobs", ImVec2(button_width, 30.0f)))
-//    {
-//        common->current_page++;
-//        common->start_job_searching = true;
-//        common->cv.notify_one();
-//    }
-//
-//    ImGui::End();
-//}
+    if (clicked)
+        is_starred = !is_starred; // Toggle the state on click
+
+    // Choose color: yellow for starred, white otherwise
+    ImU32 color = is_starred ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
+
+    // Draw the star with consistent size and radius
+    DrawStar(draw_list, center, size * 0.4f, color, is_starred);
+
+    ImGui::PopID();
+    return clicked;
+}
+
+void DrawThread:: DrawStar(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color, bool filled) {
+    const int num_points = 5;
+    ImVec2 points[num_points * 2];
+    float start_angle = -IM_PI / 2; // Start with the top point of the star
+    float angle_increment = IM_PI / num_points;
+
+    for (int i = 0; i < num_points * 2; i++) {
+        // Use consistent radii for all stars
+        float r = (i % 2 == 0) ? radius : radius * 0.45f;
+        float angle = start_angle + i * angle_increment;
+        points[i] = ImVec2(center.x + r * cosf(angle), center.y + r * sinf(angle));
+    }
+
+    // Fill the star only if `filled` is true
+    if (filled) {
+        draw_list->AddConvexPolyFilled(points, num_points * 2, color); // Fill inside the star
+    }
+
+    // Draw the outer border on top to ensure it stays visible
+    draw_list->AddPolyline(points, num_points * 2, IM_COL32(255, 255, 255, 255), true, 2.0f);
+}
 
 /*
 *  This code creates a texture from an image that is in the memory!

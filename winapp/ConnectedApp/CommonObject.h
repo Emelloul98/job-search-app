@@ -15,7 +15,8 @@ struct Jobs
 	std::string salary;         // Salary (e.g., "36940.19")
 	std::string description;    // Job description (e.g., "Step in for absent teachers with Swing Education...")
 	std::string created_date;   // Date the job was posted (e.g., "2025-01-02T15:09:11Z")
-	bool is_expanded = false;
+	bool is_expanded = false;   // Flag to indicate if the job details are expanded
+	bool is_starred = false;    // Flag to indicate if the job is starred
 };
 
 struct CommonObjects
