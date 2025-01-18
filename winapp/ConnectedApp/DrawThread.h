@@ -13,6 +13,7 @@ public:
     ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels);
     void DrawStar(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color, bool filled); 
     bool StarButton(const char* id, bool& is_starred);
+    bool jobsButton(const char* label, float button_width);
     std::vector<Jobs> current_jobs;
     const std::unordered_map<std::string, std::string> country_codes = {
             {"United Kingdom", "gb"},

@@ -164,7 +164,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
 			common->field = fields[selected_field];
 			common->job_type = job_types[selected_job_type];
             common->sorted_by = sorted_by[selected_sorte];
-
+			current_jobs.clear();
             common->start_job_searching=true;
             common->cv.notify_one();  
 
@@ -343,13 +343,12 @@ void DrawThread::display_jobs(CommonObjects* common)
     ImGui::SetCursorPosX(button_x);
 
     // Add button to load more jobs
-    if (ImGui::Button("More Jobs", ImVec2(button_width, 30.0f)))
+    if (jobsButton("More Jobs",button_width))
     {
         common->current_page++;
         common->start_job_searching = true;
         common->cv.notify_one();
     }
-
     ImGui::End();
 }
 
@@ -400,6 +399,28 @@ void DrawThread:: DrawStar(ImDrawList* draw_list, ImVec2 center, float radius, I
     draw_list->AddPolyline(points, num_points * 2, IM_COL32(255, 255, 255, 255), true, 2.0f);
 }
 
+bool DrawThread:: jobsButton(const char* label,float button_width)
+{
+	ImGui::PushID(label);
+	ImVec2 button_size = ImVec2(button_width, 30);
+	ImVec2 p = ImGui::GetCursorScreenPos();
+	bool is_clicked = ImGui::InvisibleButton(label, button_size);
+	ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+	ImU32 color_bg    = ImGui::GetColorU32(ImVec4(0.15f, 0.15f, 0.15, 1.0f));
+    ImU32 color_hover = ImGui::GetColorU32(ImVec4(0.25f, 0.25f, 0.25, 1.0f));
+    ImU32 color_g1    = ImGui::GetColorU32(ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
+    ImU32 color_g2    = ImGui::GetColorU32(ImVec4(1.0f, 0.15f, 0.15f, 1.0f));
+    ImU32 color_text  = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); 
+
+	draw_list->AddRectFilledMultiColor(p, ImVec2(p.x + button_size.x, p.y + button_size.y), color_g1, color_g2, color_g2, color_g1);
+    if (ImGui::IsItemHovered()) draw_list->AddRectFilled(p, ImVec2(p.x + button_size.x, p.y + button_size.y), color_hover);
+	ImVec2 text_size = ImGui::CalcTextSize(label);
+	ImVec2 text_pos = ImVec2(p.x + (button_size.x - text_size.x) * 0.5f, p.y + (button_size.y - text_size.y) * 0.5f);
+	draw_list->AddText(text_pos, color_text, label);
+	ImGui::PopID();
+    return is_clicked;
+}
 /*
 *  This code creates a texture from an image that is in the memory!
 *  It use the stb_image library to load the image from memory.
