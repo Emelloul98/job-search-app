@@ -253,7 +253,10 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
     ImGui::SetNextWindowSize(ImVec2(220.0f, popup_height));
 
     if (ImGui::BeginPopup(label, ImGuiWindowFlags_NoMove)) {
-        ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), false, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f); 
+
+        ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), false);
 
         for (int i = 0; i < items_count; i++) {
             if (ImGui::Selectable(items[i], i == *selected_item)) {
@@ -261,6 +264,7 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
                 ImGui::CloseCurrentPopup(); // Close popup when item is selected
             }
         }
+        ImGui::PopStyleVar();
 
         ImGui::EndChild();
         ImGui::EndPopup();
