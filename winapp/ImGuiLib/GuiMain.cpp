@@ -30,6 +30,9 @@ static bool                     g_SwapChainOccluded = false;
 static UINT                     g_ResizeWidth = 0, g_ResizeHeight = 0;
 static ID3D11RenderTargetView*  g_mainRenderTargetView = nullptr;
 
+
+
+
 // Simple helper function to load an image into a DX11 texture with common settings
 // Use like this:
 //int my_image_width = 0;
@@ -125,7 +128,18 @@ int GuiMain(drawcallback drawfunction, void* obj_ptr,void* callerPtr)
     //ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"ImGui Example", nullptr };
     ::RegisterClassExW(&wc);
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Dear ImGui DirectX11 Example", WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, nullptr, nullptr, wc.hInstance, nullptr);
+
+	//I added this code
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    // For full screen:
+    HWND hwnd = ::CreateWindowW(wc.lpszClassName,
+        L"Dear ImGui DirectX11 Example",
+        WS_OVERLAPPEDWINDOW,
+        0, 0, screenWidth, screenHeight,
+        nullptr, nullptr, wc.hInstance, nullptr);
+
+    //HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Dear ImGui DirectX11 Example", WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, nullptr, nullptr, wc.hInstance, nullptr);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))

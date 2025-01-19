@@ -10,6 +10,7 @@ int main()
 { 
     CommonObjects common;
     DrawThread draw;
+
     auto draw_th = std::jthread([&] {draw(common); });
     DownloadThread down;
     auto down_th = std::jthread([&] {down(common); });

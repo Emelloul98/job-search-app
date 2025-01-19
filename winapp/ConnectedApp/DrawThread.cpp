@@ -8,6 +8,13 @@
 #include <vector>
 #include <string>
 #include <filesystem>
+
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+using namespace std;
+
+
 #define IM_PI 3.14159265358979323846f
 
 extern ID3D11Device* g_pd3dDevice;
@@ -73,7 +80,6 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
         ImGuiWindowFlags_NoDecoration |
         ImGuiWindowFlags_NoBackground |
         ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoInputs |
         ImGuiWindowFlags_NoSavedSettings);
 
     // Style variables
@@ -184,8 +190,73 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     ImGui::EndGroup();
     ImGui::EndChild();
 
+    // Add Favorites button below the search bar
+    const float favorites_button_width = 200.0f;  // Width of favorites button
+    const float favorites_button_height = 50.0f;  // Height of favorites button
+    const float favorites_y_offset = 20.0f;       // Space between searchbar and favorites button
+
+     // Calculate position for centered favorites button
+    float favorites_x = center_position + (searchbar_width - favorites_button_width) * 0.5f;
+    float favorites_y = searchbar_y_pos + searchbar_height + favorites_y_offset;
+
+    // Style for favorites button
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.0f);
+    
+    ImGui::SetCursorPos(ImVec2(favorites_x, favorites_y));
+    if (ImGui::Button("Show Favorite Jobs", ImVec2(favorites_button_width, favorites_button_height))) {
+        ImGui::OpenPopup("Favorite Jobs");
+    }
+    // Popup window
+
+    bool favorite_jobs_is_open = true;
+
+    if (ImGui::BeginPopupModal("Favorite Jobs", &favorite_jobs_is_open, ImGuiWindowFlags_AlwaysAutoResize)) {
+        json favoriteJobs  = common->favorite_jobs.getFavorites();
+
+        // Add a little padding
+        ImGui::BeginChild("ScrollingRegion", ImVec2(600, 400), true);
+
+        for (const auto& job : favoriteJobs) {
+            // Job Title as header
+            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 245, 255));
+            ImGui::TextWrapped("%s", job["title"].get<std::string>().c_str());
+            ImGui::PopStyleColor();
+
+            // Company
+            ImGui::TextWrapped("Company: %s", job["company"].get<std::string>().c_str());
+
+            // Location
+            ImGui::TextWrapped("Location: %s", job["location"].get<std::string>().c_str());
+
+            // Salary
+            ImGui::TextWrapped("Salary: %s", job["salary"].get<std::string>().c_str());
+
+            // Description (limited to prevent too long text)
+            std::string desc = job["description"].get<std::string>();
+            if (desc.length() > 200) {
+                desc = desc.substr(0, 200) + "...";
+            }
+            ImGui::TextWrapped("Description: %s", desc.c_str());
+
+            // Add some spacing between jobs
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+        }
+
+        ImGui::EndChild();
+
+   //     // Close button at the bottom
+   //     if (ImGui::Button("save to file", ImVec2(120, 0))) {
+			//common->favorite_jobs.saveFavorites();
+   //         ImGui::CloseCurrentPopup();
+   //     }
+
+        ImGui::EndPopup();
+    }
+
     // Pop all style modifications
-    ImGui::PopStyleVar();
+    ImGui::PopStyleVar(2);
     ImGui::PopStyleColor(6);
     ImGui::End();
 
@@ -284,197 +355,6 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
     ImGui::PopID();
 }
 
-//void DrawThread::display_jobs(CommonObjects* common)
-//{
-//    ImVec2 mainViewportSize = ImGui::GetMainViewport()->Size;
-//    ImVec2 windowSize = ImVec2(mainViewportSize.x * 0.8f, mainViewportSize.y * 0.8f);
-//    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Appearing);
-//    ImGui::Begin("Job Listings", &show_jobs_list);
-//
-//    // Add a table with 6 columns (including the new Star column)
-//    if (ImGui::BeginTable("JobTable", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
-//    {
-//        // Table headers
-//        ImGui::TableSetupColumn("num", ImGuiTableColumnFlags_WidthFixed, 50.0f);
-//        ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch);
-//        ImGui::TableSetupColumn("Company", ImGuiTableColumnFlags_WidthStretch);
-//        ImGui::TableSetupColumn("Location", ImGuiTableColumnFlags_WidthStretch);
-//        ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthStretch);
-//        ImGui::TableSetupColumn("Star", ImGuiTableColumnFlags_WidthFixed, 30.0f);
-//        ImGui::TableHeadersRow();
-//
-//        // Iterate over the jobs and create rows in the table
-//        for (size_t i = 0; i < current_jobs.size(); ++i)
-//        {
-//            Jobs& job = current_jobs[i];
-//            ImGui::TableNextRow();
-//            // Display job number
-//            ImGui::TableNextColumn();
-//
-//            if (ImGui::TreeNodeEx((std::to_string(i + 1)).c_str(), job.is_expanded ? ImGuiTreeNodeFlags_DefaultOpen : 0))
-//            {
-//                ImGui::TableNextColumn();
-//                ImGui::Text("%s", job.title.c_str());
-//                ImGui::TextWrapped("Description: %s", job.description.c_str());
-//                ImGui::Text("Posted on: %s", job.created_date.c_str());
-//                ImGui::Text("URL: %s", job.url.c_str());
-//                ImGui::TreePop();
-//                job.is_expanded = true;
-//            }
-//            else
-//            {
-//                job.is_expanded = false;
-//                ImGui::TableNextColumn();
-//                ImGui::Text("%s", job.title.c_str());
-//            }
-//
-//            // Display the rest of the columns
-//            ImGui::TableNextColumn();
-//            ImGui::Text("%s", job.company.c_str());
-//
-//            ImGui::TableNextColumn();
-//            ImGui::Text("%s", job.location.c_str());
-//
-//            ImGui::TableNextColumn();
-//            ImGui::Text("%s", job.salary.c_str());
-//            // Star column
-//            ImGui::TableNextColumn();
-//            std::string star_id = "star_button_" + std::to_string(i+1);
-//            StarButton(star_id.c_str(), job.is_starred);
-//
-//        }
-//
-//        ImGui::EndTable();
-//    }
-//
-//    // Calculate the button position
-//    float window_width = ImGui::GetWindowSize().x;
-//    float button_width = 120.0f; // Width of the button
-//    float button_x = (window_width - button_width) * 0.5f; // Center the button horizontally
-//    ImGui::SetCursorPosX(button_x);
-//
-//    // Add button to load more jobs
-//    if (jobsButton("More Jobs",button_width))
-//    {
-//        common->current_page++;
-//        common->start_job_searching = true;
-//        common->cv.notify_one();
-//    }
-//    ImGui::End();
-//}
-
-
-//void DrawThread::display_jobs(CommonObjects* common)
-//{
-//    ImVec2 mainViewportSize = ImGui::GetMainViewport()->Size;
-//    ImVec2 windowSize = ImVec2(mainViewportSize.x * 0.8f, mainViewportSize.y * 0.8f);
-//    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Appearing);
-//    ImGui::Begin("Job Listings", &show_jobs_list);
-//
-//    static int selected_job = -1;  // Track which job was clicked
-//    bool open_popup = false;       // Flag to open popup
-//
-//    if (ImGui::BeginTable("JobTable", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
-//    {
-//        // Table headers
-//        ImGui::TableSetupColumn("num", ImGuiTableColumnFlags_WidthFixed, 50.0f);
-//        ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch);
-//        ImGui::TableSetupColumn("Company", ImGuiTableColumnFlags_WidthStretch);
-//        ImGui::TableSetupColumn("Location", ImGuiTableColumnFlags_WidthStretch);
-//        ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthStretch);
-//        ImGui::TableSetupColumn("Star", ImGuiTableColumnFlags_WidthFixed, 30.0f);
-//        ImGui::TableHeadersRow();
-//
-//        // Iterate over the jobs and create rows in the table
-//        for (size_t i = 0; i < current_jobs.size(); ++i)
-//        {
-//            Jobs& job = current_jobs[i];
-//            ImGui::TableNextRow();
-//
-//            // Display job number
-//            ImGui::TableNextColumn();
-//            ImGui::Text("%zu", i + 1);
-//
-//            // Title column with clickable behavior
-//            ImGui::TableNextColumn();
-//            if (ImGui::Selectable(job.title.c_str(), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick))
-//            {
-//                selected_job = i;
-//                open_popup = true;
-//            }
-//
-//            // Display the rest of the columns
-//            ImGui::TableNextColumn();
-//            ImGui::Text("%s", job.company.c_str());
-//            ImGui::TableNextColumn();
-//            ImGui::Text("%s", job.location.c_str());
-//            ImGui::TableNextColumn();
-//            ImGui::Text("%s", job.salary.c_str());
-//            ImGui::TableNextColumn();
-//            std::string star_id = "star_button_" + std::to_string(i + 1);
-//            StarButton(star_id.c_str(), job.is_starred);
-//        }
-//        ImGui::EndTable();
-//    }
-//
-//    // Handle popup
-//    if (open_popup)
-//    {
-//        ImGui::OpenPopup("Job Details");
-//    }
-//
-//    // Center popup in the middle of the window
-//    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-//    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-//
-//    if (ImGui::BeginPopupModal("Job Details", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-//    {
-//        if (selected_job >= 0 && selected_job < current_jobs.size())
-//        {
-//            Jobs& job = current_jobs[selected_job];
-//
-//            ImGui::Text("Title: %s", job.title.c_str());
-//            ImGui::Separator();
-//
-//            ImGui::Text("Company: %s", job.company.c_str());
-//            ImGui::Text("Location: %s", job.location.c_str());
-//            ImGui::Text("Salary: %s", job.salary.c_str());
-//            ImGui::Text("Posted on: %s", job.created_date.c_str());
-//
-//            ImGui::Separator();
-//            ImGui::Text("Description:");
-//            ImGui::BeginChild("Description", ImVec2(500, 200), true);
-//            ImGui::TextWrapped("%s", job.description.c_str());
-//            ImGui::EndChild();
-//
-//            ImGui::Text("URL: %s", job.url.c_str());
-//
-//            ImGui::Separator();
-//            if (ImGui::Button("Close", ImVec2(120, 0)))
-//            {
-//                ImGui::CloseCurrentPopup();
-//            }
-//        }
-//        ImGui::EndPopup();
-//    }
-
-    //  Calculate the button position
-//    float window_width = ImGui::GetWindowSize().x;
-//    float button_width = 120.0f; // Width of the button
-//    float button_x = (window_width - button_width) * 0.5f; // Center the button horizontally
-//    ImGui::SetCursorPosX(button_x);
-//
-//    // Add button to load more jobs
-//    if (jobsButton("More Jobs",button_width))
-//    {
-//        common->current_page++;
-//        common->start_job_searching = true;
-//        common->cv.notify_one();
-//    }
-//
-//    ImGui::End();
-//}
-
 
 void DrawThread::display_jobs(CommonObjects* common)
 {
@@ -500,25 +380,22 @@ void DrawThread::display_jobs(CommonObjects* common)
         // Iterate over the jobs and create rows in the table
         for (size_t i = 0; i < current_jobs.size(); ++i)
         {
-            Jobs& job = current_jobs[i];
+            Job& job = current_jobs[i];
             ImGui::TableNextRow();
 
-            // Display job number
-            ImGui::TableNextColumn();
-            ImGui::Text("%zu", i + 1);
+            ImGui::TableNextColumn();  // Move to first column
 
-            // Title column with clickable behavior
-            ImGui::TableNextColumn();
-            float wrap_width = ImGui::GetContentRegionAvail().x;
-            ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + wrap_width);  // Start text wrapping
-            if (ImGui::Selectable(job.title.c_str(), false, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick))
+            // Add selectable in the first column
+            if (ImGui::Selectable(std::to_string(i + 1).c_str(), false,
+                ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick, ImVec2(0, 0)))
             {
                 selected_job = i;
                 open_popup = true;
             }
-            ImGui::PopTextWrapPos();
 
-            // Display the rest of the columns
+            // Continue with the rest of the columns
+            ImGui::TableNextColumn();
+            ImGui::TextWrapped("%s", job.title.c_str());
             ImGui::TableNextColumn();
             ImGui::TextWrapped("%s", job.company.c_str());
             ImGui::TableNextColumn();
@@ -528,7 +405,7 @@ void DrawThread::display_jobs(CommonObjects* common)
 
             ImGui::TableNextColumn();
             std::string star_id = "star_button_" + std::to_string(i + 1);
-            StarButton(star_id.c_str(), job.is_starred);
+            DrawStar(star_id.c_str(), job.is_starred);
         }
         ImGui::EndTable();
     }
@@ -543,6 +420,7 @@ void DrawThread::display_jobs(CommonObjects* common)
     ImVec2 center = ImGui::GetMainViewport()->GetCenter();
     ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
+    float button_width = 120.0f; // Width of the button
     bool job_details_is_open = true;
     // Set fixed size for popup
     ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_Always);
@@ -550,10 +428,10 @@ void DrawThread::display_jobs(CommonObjects* common)
     {
 
         // Begin a child window that will contain all content with vertical scrolling
-        ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true);
+        ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing() - 8), true);
         if (selected_job >= 0 && selected_job < current_jobs.size())
         {
-            Jobs& job = current_jobs[selected_job];
+            Job& job = current_jobs[selected_job];
 
             ImGui::Text("Title: %s", job.title.c_str());
             ImGui::Separator();
@@ -573,16 +451,20 @@ void DrawThread::display_jobs(CommonObjects* common)
         }
         ImGui::EndChild();
 
-        // Place the Close button outside the scrolling region, at the bottom of the popup
-        if (ImGui::Button("Close", ImVec2(120, 0)))
-        {
-            ImGui::CloseCurrentPopup();
+        if (jobsButton("Add to favorite", button_width))
+		{
+			Job& job = current_jobs[selected_job];
+            job.is_starred = true;
+			common->favorite_jobs.addJob(job);
+            
+			ImGui::CloseCurrentPopup();
+           
         }
         ImGui::EndPopup();
+
     }
 
     float window_width = ImGui::GetWindowSize().x;
-    float button_width = 120.0f; // Width of the button
     float button_x = (window_width - button_width) * 0.5f; // Center the button horizontally
     ImGui::SetCursorPosX(button_x);
     
@@ -593,49 +475,31 @@ void DrawThread::display_jobs(CommonObjects* common)
         common->start_job_searching = true;
         common->cv.notify_one();
     }
-<<<<<<< HEAD
-    
-   
-=======
+
 	ImGui::SameLine();
     if (jobsButton("Salary data", button_width))
     {
 		common->download_jobs_stats = true;
 		common->cv.notify_one();
     }
-    ImGui::SameLine();
-	if (jobsButton("save to file", button_width)) saveStarredJobsToFile();
->>>>>>> 59ad613a4841b7255cc96699c3de2ecd0ec2f312
+   /* ImGui::SameLine();
+	if (jobsButton("save to file", button_width)) saveStarredJobsToFile();*/
     ImGui::End();
 }
 
 
-bool DrawThread::StarButton(const char* id, bool& is_starred)
-{
+
+void DrawThread:: DrawStar(const char* id, bool& is_starred) {
     ImGui::PushID(id);
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     ImVec2 p = ImGui::GetCursorScreenPos();
     float size = ImGui::GetFrameHeight();
     ImVec2 center = ImVec2(p.x + size * 0.5f, p.y + size * 0.5f);
-
     ImGui::InvisibleButton("star_button", ImVec2(size, size));
-    bool hovered = ImGui::IsItemHovered();
-    bool clicked = ImGui::IsItemClicked();
-
-    if (clicked)
-        is_starred = !is_starred; // Toggle the state on click
-
-    // Choose color: yellow for starred, white otherwise
     ImU32 color = is_starred ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
 
-    // Draw the star with consistent size and radius
-    DrawStar(draw_list, center, size * 0.4f, color, is_starred);
+	float radius = size * 0.4f;
 
-    ImGui::PopID();
-    return clicked;
-}
-
-void DrawThread:: DrawStar(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color, bool filled) {
     const int num_points = 5;
     ImVec2 points[num_points * 2];
     float start_angle = -IM_PI / 2; // Start with the top point of the star
@@ -649,12 +513,14 @@ void DrawThread:: DrawStar(ImDrawList* draw_list, ImVec2 center, float radius, I
     }
 
     // Fill the star only if `filled` is true
-    if (filled) {
+    if (is_starred) {
         draw_list->AddConvexPolyFilled(points, num_points * 2, color); // Fill inside the star
     }
 
     // Draw the outer border on top to ensure it stays visible
     draw_list->AddPolyline(points, num_points * 2, IM_COL32(255, 255, 255, 255), true, 2.0f);
+    ImGui::PopID();
+
 }
 
 bool DrawThread:: jobsButton(const char* label,float button_width)
@@ -693,40 +559,7 @@ void DrawThread::display_last_year_stats(CommonObjects& common) {
     ImGui::End();
 }
 
-void DrawThread::saveStarredJobsToFile()
-{
-    const std::string default_file_name = "starred_jobs.txt";
-    std::ofstream out_file;
-    if (!starred_file_exists) {
-        out_file.open(default_file_name, std::ios::app);
-        if (!out_file) {
-            std::cerr << "Error: Unable to open or create the file: " << default_file_name << std::endl;
-            return;
-        }
-        starred_file_exists = true;
-    }
-    else {
-        out_file.open(default_file_name, std::ios::app);
-        if (!out_file) {
-            std::cerr << "Error: Unable to append to the file: " << default_file_name << std::endl;
-            return;
-        }
-    }
-    for (const auto& job : current_jobs) {
-        if (job.is_starred) {
-            out_file << "Title: " << job.title << "\n";
-            out_file << "Company: " << job.company << "\n";
-            out_file << "Location: " << job.location << "\n";
-            out_file << "URL: " << job.url << "\n";
-            out_file << "Salary: " << job.salary << "\n";
-            out_file << "Description: " << job.description << "\n";
-            out_file << "Created Date: " << job.created_date << "\n";
-            out_file << "-------------------------------------------\n";
-        }
-    }
-    out_file.close();
-    std::cout << "Starred jobs saved successfully to: " << default_file_name << std::endl;
-}
+
 
 /*
 *  This code creates a texture from an image that is in the memory!
@@ -768,3 +601,86 @@ ID3D11ShaderResourceView* DrawThread:: CreateTextureFromImage(const unsigned cha
 }
 
 
+
+
+//bool DrawThread::StarButton(const char* id, bool& is_starred)
+//{
+//    ImGui::PushID(id);
+//    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+//    ImVec2 p = ImGui::GetCursorScreenPos();
+//    float size = ImGui::GetFrameHeight();
+//    ImVec2 center = ImVec2(p.x + size * 0.5f, p.y + size * 0.5f);
+//
+//    ImGui::InvisibleButton("star_button", ImVec2(size, size));
+//    bool hovered = ImGui::IsItemHovered();
+//    bool clicked = ImGui::IsItemClicked();
+//
+//    if (clicked)
+//        is_starred = !is_starred; // Toggle the state on click
+//
+//    // Choose color: yellow for starred, white otherwise
+//    ImU32 color = is_starred ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
+//
+//    // Draw the star with consistent size and radius
+//    DrawStar(draw_list, center, size * 0.4f, color, is_starred);
+//
+//    ImGui::PopID();
+//    return clicked;
+//}
+//
+//void DrawThread::DrawStar(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color, bool filled) {
+//    const int num_points = 5;
+//    ImVec2 points[num_points * 2];
+//    float start_angle = -IM_PI / 2; // Start with the top point of the star
+//    float angle_increment = IM_PI / num_points;
+//
+//    for (int i = 0; i < num_points * 2; i++) {
+//        // Use consistent radii for all stars
+//        float r = (i % 2 == 0) ? radius : radius * 0.45f;
+//        float angle = start_angle + i * angle_increment;
+//        points[i] = ImVec2(center.x + r * cosf(angle), center.y + r * sinf(angle));
+//    }
+//
+//    // Fill the star only if `filled` is true
+//    if (filled) {
+//        draw_list->AddConvexPolyFilled(points, num_points * 2, color); // Fill inside the star
+//    }
+//
+//    // Draw the outer border on top to ensure it stays visible
+//    draw_list->AddPolyline(points, num_points * 2, IM_COL32(255, 255, 255, 255), true, 2.0f);
+//}
+
+//void DrawThread::saveStarredJobsToFile()
+//{
+//    const std::string default_file_name = "starred_jobs.txt";
+//    std::ofstream out_file;
+//    if (!starred_file_exists) {
+//        out_file.open(default_file_name, std::ios::app);
+//        if (!out_file) {
+//            std::cerr << "Error: Unable to open or create the file: " << default_file_name << std::endl;
+//            return;
+//        }
+//        starred_file_exists = true;
+//    }
+//    else {
+//        out_file.open(default_file_name, std::ios::app);
+//        if (!out_file) {
+//            std::cerr << "Error: Unable to append to the file: " << default_file_name << std::endl;
+//            return;
+//        }
+//    }
+//    for (const auto& job : current_jobs) {
+//        if (job.is_starred) {
+//            out_file << "Title: " << job.title << "\n";
+//            out_file << "Company: " << job.company << "\n";
+//            out_file << "Location: " << job.location << "\n";
+//            out_file << "URL: " << job.url << "\n";
+//            out_file << "Salary: " << job.salary << "\n";
+//            out_file << "Description: " << job.description << "\n";
+//            out_file << "Created Date: " << job.created_date << "\n";
+//            out_file << "-------------------------------------------\n";
+//        }
+//    }
+//    out_file.close();
+//    std::cout << "Starred jobs saved successfully to: " << default_file_name << std::endl;
+//}

@@ -16,14 +16,16 @@ public:
 
     // Side functions:
     ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels);
-    void DrawStar(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color, bool filled); 
-    bool StarButton(const char* id, bool& is_starred);
+    void DrawStar(const char* id, bool& is_starred);
     bool jobsButton(const char* label, float button_width);
     void display_last_year_stats(CommonObjects& common);
-    void saveStarredJobsToFile();
+
+  /*  void saveStarredJobsToFile();
+    bool StarButton(const char* id, bool& is_starred);*/
+
 
 	// Variables:
-    std::vector<Jobs> current_jobs;
+    std::vector<Job> current_jobs;
     const std::unordered_map<std::string, std::string> country_codes = {
             {"United Kingdom", "gb"},
             {"United States", "us"},

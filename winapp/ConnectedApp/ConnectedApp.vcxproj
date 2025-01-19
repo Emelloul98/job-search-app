@@ -140,6 +140,8 @@
     <ClCompile Include="ConnectedApp.cpp" />
     <ClCompile Include="DownloadThread.cpp" />
     <ClCompile Include="DrawThread.cpp" />
+    <ClCompile Include="FavoriteJobs.cpp" />
+    <ClCompile Include="Job.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ImGuiLib\ImGuiLib.vcxproj">
@@ -150,6 +152,7 @@
     <ClInclude Include="CommonObject.h" />
     <ClInclude Include="DownloadThread.h" />
     <ClInclude Include="DrawThread.h" />
+    <ClInclude Include="FavoriteJobs.h" />
     <ClInclude Include="myImages.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

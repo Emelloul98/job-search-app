@@ -64,7 +64,7 @@ void DownloadThread::searchJobs(CommonObjects& common)
             common.jobs.clear();
             // Initialize the jobs vector from the response            
             for (const auto& job_data : response["results"]) {
-                Jobs job;
+                Job job;
 
                 // Extract title and company name (check if they exist)
                 job.title = job_data.contains("title") ? job_data["title"].get<std::string>() : "Unknown Title";
@@ -110,6 +110,9 @@ void DownloadThread::searchJobs(CommonObjects& common)
 
                 // Extract job created date (check if exists)
                 job.created_date = job_data.contains("created") ? job_data["created"].get<std::string>() : "Unknown Date";
+
+				// Extract job ID (check if exists)
+                job.id = job_data.contains("id") ? job_data["id"].get<std::string>() : "Unknown ID";
 
                 // Add the job to the jobs vector
                 common.jobs.push_back(job);
