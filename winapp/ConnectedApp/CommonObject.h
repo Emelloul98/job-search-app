@@ -33,4 +33,7 @@ struct CommonObjects
 	std::string job_type;
 	std::string sorted_by;
 	std::atomic_int current_page = 1;
+	std::atomic_bool download_jobs_stats = false;
+	std::atomic_bool stats_data_ready = false;
+	float salaries[12] = { 0 };
 };
