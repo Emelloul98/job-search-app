@@ -16,13 +16,22 @@ void DownloadThread::operator()(CommonObjects& common)
         {
             std::unique_lock<std::mutex> lock(common.mtx);
             common.cv.wait(lock, [&common]() {
-                return common.start_job_searching.load();
+                return common.start_job_searching.load() | common.download_jobs_stats.load();
             });
 			if (common.exit_flag) return;
-            searchJobs(common);
-            common.start_job_searching=false;
-			common.job_page_ready = true;
-            std::cout << "Full data ready" << std::endl;
+            else if (common.start_job_searching)
+            {
+                searchJobs(common);
+                common.start_job_searching=false;
+			    common.job_page_ready = true;
+                std::cout << "Full data ready" << std::endl;
+            }
+            else if (common.download_jobs_stats)
+            {
+                downloadLastYearStats(common);
+				common.stats_data_ready = true;
+				common.download_jobs_stats = false;
+            }
         }
     }
 }
@@ -112,6 +121,47 @@ void DownloadThread::searchJobs(CommonObjects& common)
     }
     else {
         std::cerr << "Error fetching job data: " << (res ? std::to_string(res->status) : "Request failed") << std::endl;
+    }
+}
+
+void DownloadThread::downloadLastYearStats(CommonObjects& common) {
+    // Construct the URL for the historical salary stats endpoint
+    std::string url = "https://api.adzuna.com/v1/api/jobs/" + common.country + "/history?app_id=" + app_id + "&app_key=" + app_key + "&category=" + common.field + "-jobs";
+
+    // Send the GET request using the constructed URL
+    auto res = cli.Get(url);
+
+    if (res && (res->status >= 200 && res->status < 300)) {
+        try {
+            // Parse the raw JSON response
+            nlohmann::json response = nlohmann::json::parse(res->body);
+			//std::cout << response << std::endl;
+            // Extract the "month" object which contains the salary data for each month
+            if (response.contains("month")) {
+                const auto& month_data = response["month"];
+
+                // Clear previous salaries data
+                std::fill(std::begin(common.salaries), std::end(common.salaries), 0.0f);  // Reset all values to 0
+
+                // Loop through the months (January to December) and add values to the salaries array
+                for (int month = 1; month <= 12; month++) {
+                    // Build the month string with the proper format (2024-01, 2024-02, ..., 2024-12)
+					std::string addition = month < 10 ? "0" : "";
+                    std::string month_str = "2024-" + addition + std::to_string(month);
+
+                    if (month_data.contains(month_str)) {
+                        // Store the value in the corresponding index of the array
+                        common.salaries[month - 1] = month_data[month_str].get<float>();
+                    }
+                }
+            }
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Error parsing JSON in downloadLastYearStats: " << e.what() << std::endl;
+        }
+    }
+    else {
+        std::cerr << "Error fetching stats data: " << (res ? std::to_string(res->status) : "Request failed") << std::endl;
     }
 }
 

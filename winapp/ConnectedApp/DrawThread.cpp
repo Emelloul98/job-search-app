@@ -4,6 +4,10 @@
 #include <d3d11.h>
 #include "stb_image.h"
 #include "myImages.h"
+#include <fstream>
+#include <vector>
+#include <string>
+#include <filesystem>
 #define IM_PI 3.14159265358979323846f
 
 extern ID3D11Device* g_pd3dDevice;
@@ -25,6 +29,12 @@ void DrawAppWindow(void* common_ptr,void* callerPtr) {
 		draw_thread->show_jobs_list = true;
     }
     if(draw_thread->show_jobs_list) draw_thread->display_jobs(common);
+    if (common->stats_data_ready) {
+        draw_thread->show_last_year_stats = true;   
+		common->stats_data_ready = false;
+    }
+	if (draw_thread->show_last_year_stats) draw_thread->display_last_year_stats(*common);
+    
 }
 
 void DrawThread:: RenderBackgroundImage(CommonObjects* common) {
@@ -583,8 +593,19 @@ void DrawThread::display_jobs(CommonObjects* common)
         common->start_job_searching = true;
         common->cv.notify_one();
     }
+<<<<<<< HEAD
     
    
+=======
+	ImGui::SameLine();
+    if (jobsButton("Salary data", button_width))
+    {
+		common->download_jobs_stats = true;
+		common->cv.notify_one();
+    }
+    ImGui::SameLine();
+	if (jobsButton("save to file", button_width)) saveStarredJobsToFile();
+>>>>>>> 59ad613a4841b7255cc96699c3de2ecd0ec2f312
     ImGui::End();
 }
 
@@ -658,6 +679,55 @@ bool DrawThread:: jobsButton(const char* label,float button_width)
 	ImGui::PopID();
     return is_clicked;
 }
+
+void DrawThread::display_last_year_stats(CommonObjects& common) {
+    ImGui::Begin("Salary Data", &show_last_year_stats);
+    ImPlot::CreateContext();
+    float months[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+    std::string title = "Average Salary Over 2024 in field: " + common.field;
+    if (ImPlot::BeginPlot(title.c_str())) {
+        ImPlot::SetupAxes("Month", "Average Salary ($)");
+        ImPlot::PlotLine("Salary", months, common.salaries, 12);
+        ImPlot::EndPlot();
+    }
+    ImGui::End();
+}
+
+void DrawThread::saveStarredJobsToFile()
+{
+    const std::string default_file_name = "starred_jobs.txt";
+    std::ofstream out_file;
+    if (!starred_file_exists) {
+        out_file.open(default_file_name, std::ios::app);
+        if (!out_file) {
+            std::cerr << "Error: Unable to open or create the file: " << default_file_name << std::endl;
+            return;
+        }
+        starred_file_exists = true;
+    }
+    else {
+        out_file.open(default_file_name, std::ios::app);
+        if (!out_file) {
+            std::cerr << "Error: Unable to append to the file: " << default_file_name << std::endl;
+            return;
+        }
+    }
+    for (const auto& job : current_jobs) {
+        if (job.is_starred) {
+            out_file << "Title: " << job.title << "\n";
+            out_file << "Company: " << job.company << "\n";
+            out_file << "Location: " << job.location << "\n";
+            out_file << "URL: " << job.url << "\n";
+            out_file << "Salary: " << job.salary << "\n";
+            out_file << "Description: " << job.description << "\n";
+            out_file << "Created Date: " << job.created_date << "\n";
+            out_file << "-------------------------------------------\n";
+        }
+    }
+    out_file.close();
+    std::cout << "Starred jobs saved successfully to: " << default_file_name << std::endl;
+}
+
 /*
 *  This code creates a texture from an image that is in the memory!
 *  It use the stb_image library to load the image from memory.
