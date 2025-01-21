@@ -16,28 +16,23 @@ void DownloadThread::operator()(CommonObjects& common)
         {
             std::unique_lock<std::mutex> lock(common.mtx);
             common.cv.wait(lock, [&common]() {
-                return common.start_job_searching.load() | common.download_jobs_stats.load() | common.download_companies_data;
+                return common.start_job_searching.load();
             });
 			if (common.exit_flag) return;
-            else if (common.start_job_searching)
-            {
-                searchJobs(common);
-                common.start_job_searching=false;
-			    common.job_page_ready = true;
-                std::cout << "Full data ready" << std::endl;
-            }
-            else if (common.download_jobs_stats)
-            {
+          
+            searchJobs(common);
+            common.start_job_searching = false;
+			common.job_page_ready = true;
+            std::cout << "Full data ready" << std::endl;
+               
+			if (common.current_page == 1)
+			{
                 downloadLastYearStats(common);
-				common.stats_data_ready = true;
-				common.download_jobs_stats = false;
-            }
-            else if (common.download_companies_data)
-            {
-				downloadCompaniesData(common);
-				common.companies_data_ready = true;
-				common.download_companies_data = false;
-            }
+                common.stats_data_ready = true;
+                downloadCompaniesData(common);
+                common.companies_data_ready = true;
+
+			}
         }
     }
 }

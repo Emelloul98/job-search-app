@@ -33,19 +33,9 @@ void DrawAppWindow(void* common_ptr,void* callerPtr) {
 		common->job_page_ready = false;
 		draw_thread->show_jobs_list = true;
     }
-    if(draw_thread->show_jobs_list && draw_thread->show_last_year_stats && draw_thread->show_pie_chart) 
+    if(draw_thread->show_jobs_list)
         draw_thread->display_jobs(common);
 
-    if (common->stats_data_ready) 
-    {
-        draw_thread->show_last_year_stats = true;   
-		common->stats_data_ready = false;
-    }
-    if (common->companies_data_ready) 
-    {
-		draw_thread->show_pie_chart = true;
-		common->companies_data_ready = false;
-    }    
 }
 
 void DrawThread:: RenderBackgroundImage(CommonObjects* common) {
@@ -178,7 +168,14 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
 
     ImGui::SetCursorPosY(button_y); // Only adjust Y position
     if (ImGui::Button(ICON_MAGNIFYING_GLASS, ImVec2(button_size, button_size))) {
+
         if (selected_job_type != -1 && selected_sorte != -1 && selected_field != -1 && selected_location != -1) {
+            common->job_page_ready = false;
+            common->stats_data_ready = false;
+            common->companies_data_ready = false;
+			common->current_page = 1;
+			common->exit_flag = false;
+
             common->country = country_codes.at(locations[selected_location]);
 			common->field = fields[selected_field];
 			common->job_type = job_types[selected_job_type];
@@ -186,16 +183,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
 			current_jobs.clear();
             common->start_job_searching=true;
             common->cv.notify_one();  
-            cout << "notify_one start_job_searching" << endl;
-
-            common->download_companies_data = true;
-            common->cv.notify_one();
-            cout << "notify_one download_companies_data" << endl;
-
-            common->download_jobs_stats = true;
-            common->cv.notify_one();
-            cout << "notify_one download_jobs_stats" << endl;
-
+          
         }
     }
    
@@ -393,11 +381,13 @@ void DrawThread::display_jobs(CommonObjects* common)
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Statistics")) {
-            display_last_year_stats(*common);
+			if (common->stats_data_ready)
+                display_last_year_stats(*common);
 			ImGui::EndTabItem();
         }
 		if (ImGui::BeginTabItem("Companies")) {
-		    DrawPieChart(*common);
+			if (common->companies_data_ready)
+		        DrawPieChart(*common);
 			ImGui::EndTabItem();
 		}
         ImGui::EndTabBar();
