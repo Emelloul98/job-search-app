@@ -1,6 +1,5 @@
 #include "FavoriteJobs.h"
 
-// המרה מ-Job ל-JSON
 json jobToJson(const Job& job) {
     return {
         {"title", job.title},

@@ -19,7 +19,7 @@ public:
     void DrawStar(const char* id, bool& is_starred);
     bool jobsButton(const char* label, float button_width);
     void display_last_year_stats(CommonObjects& common);
-
+	void DrawPieChart(CommonObjects& common);
   /*  void saveStarredJobsToFile();
     bool StarButton(const char* id, bool& is_starred);*/
 
@@ -50,5 +50,6 @@ public:
     bool show_jobs_list = false;
     bool show_last_year_stats = false;
     bool starred_file_exists = false;
+	bool show_pie_chart = false;
 };
 void DrawAppWindow(void* common_ptr, void* callerPtr);

@@ -9,6 +9,7 @@ public:
 	void downloadLastYearStats(CommonObjects& common);
 	std::string sanitizeDescription(const std::string& description);
 	std::string formatNumberWithCommas(int number);
+	void downloadCompaniesData(CommonObjects& common);
 
 };
 

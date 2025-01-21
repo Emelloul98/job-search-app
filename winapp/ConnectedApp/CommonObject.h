@@ -26,4 +26,8 @@ struct CommonObjects
 	std::atomic_bool stats_data_ready = false;
 	float salaries[12] = { 0 };
 	FavoriteJobs favorite_jobs = FavoriteJobs("favorite_jobs.json");
+	std::atomic_bool download_companies_data = false;
+	std::atomic_bool companies_data_ready = false;
+	std::vector<std::string> company_names; 
+	std::vector<float> company_values;
 };

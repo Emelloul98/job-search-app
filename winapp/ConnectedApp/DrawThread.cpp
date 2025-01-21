@@ -14,11 +14,7 @@
 
 using json = nlohmann::json;
 using namespace std;
-
-
 #define IM_PI 3.14159265358979323846f
-
-extern ID3D11Device* g_pd3dDevice;
 
 void DrawThread:: operator()(CommonObjects& common) {
     GuiMain(DrawAppWindow, &common, this);
@@ -27,7 +23,8 @@ void DrawThread:: operator()(CommonObjects& common) {
 void DrawAppWindow(void* common_ptr,void* callerPtr) {
     auto common = static_cast<CommonObjects*>(common_ptr);
     auto draw_thread = (DrawThread*)callerPtr;
-    draw_thread->RenderBackgroundImage(common);
+	// image currently not working:
+    //draw_thread->RenderBackgroundImage(common);
     draw_thread->RenderSearchBar(common);
     if (common->job_page_ready) 
     {
@@ -37,11 +34,18 @@ void DrawAppWindow(void* common_ptr,void* callerPtr) {
 		draw_thread->show_jobs_list = true;
     }
     if(draw_thread->show_jobs_list) draw_thread->display_jobs(common);
-    if (common->stats_data_ready) {
+    if (common->stats_data_ready) 
+    {
         draw_thread->show_last_year_stats = true;   
 		common->stats_data_ready = false;
     }
 	if (draw_thread->show_last_year_stats) draw_thread->display_last_year_stats(*common);
+    if (common->companies_data_ready) 
+    {
+		draw_thread->show_pie_chart = true;
+		common->companies_data_ready = false;
+    }
+    if(draw_thread->show_pie_chart) draw_thread->DrawPieChart(*common);
     
 }
 
@@ -176,7 +180,6 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     ImGui::SetCursorPosY(button_y); // Only adjust Y position
     if (ImGui::Button(ICON_MAGNIFYING_GLASS, ImVec2(button_size, button_size))) {
         if (selected_job_type != -1 && selected_sorte != -1 && selected_field != -1 && selected_location != -1) {
-            
             common->country = country_codes.at(locations[selected_location]);
 			common->field = fields[selected_field];
 			common->job_type = job_types[selected_job_type];
@@ -481,6 +484,7 @@ void DrawThread::display_jobs(CommonObjects* common)
             common->favorite_jobs.addJob(job);
             ImGui::CloseCurrentPopup();   
         }
+
         ImGui::EndPopup();
 
     }
@@ -502,6 +506,12 @@ void DrawThread::display_jobs(CommonObjects* common)
     {
 		common->download_jobs_stats = true;
 		common->cv.notify_one();
+    }
+    ImGui::SameLine();
+    if (jobsButton("companies data", button_width))
+    {
+        common->download_companies_data = true;
+        common->cv.notify_one();
     }
    /* ImGui::SameLine();
 	if (jobsButton("save to file", button_width)) saveStarredJobsToFile();*/
@@ -581,6 +591,53 @@ void DrawThread::display_last_year_stats(CommonObjects& common) {
 }
 
 
+void DrawThread::DrawPieChart(CommonObjects& common) {
+    ImPlot::CreateContext();
+
+    // Convert data from common into C-style arrays for ImPlot
+    const int size = common.company_names.size();
+    std::vector<const char*> labels_vec;
+    std::vector<float> percentages;
+
+    float total = 0.0f;
+    for (float value : common.company_values) {
+        total += value;
+    }
+
+    for (int i = 0; i < size; ++i) {
+        labels_vec.push_back(common.company_names[i].c_str());
+        percentages.push_back((common.company_values[i] / total) * 100.0f);
+    }
+
+    static const ImVec4 colors[] = {
+        ImVec4(0.9f, 0.1f, 0.1f, 1.0f),
+        ImVec4(0.1f, 0.9f, 0.1f, 1.0f),
+        ImVec4(0.1f, 0.1f, 0.9f, 1.0f),
+        ImVec4(0.9f, 0.9f, 0.1f, 1.0f),
+        ImVec4(0.9f, 0.1f, 0.9f, 1.0f)
+    };
+	std::string title = "Company Jobs Distribution in: " + common.country;
+    ImGui::Begin("Pie Chart with Leaderboard",&show_pie_chart);
+    ImGui::Text(title.c_str());
+
+    ImPlotFlags plotFlags = ImPlotFlags_NoLegend;
+    if (ImPlot::BeginPlot("Jobs Pie Chart", ImVec2(400, 400), plotFlags)) {
+        ImPlot::PlotPieChart(labels_vec.data(), percentages.data(), size, 0.5f, 0.5f, 0.4f, "%.1f%%", 90.0f, 0);
+        ImPlot::EndPlot();
+    }
+
+    ImGui::Dummy(ImVec2(0, 10));
+    ImGui::Text("Legend:");
+    for (int i = 0; i < size; ++i) {
+        ImGui::ColorButton(labels_vec[i], colors[i % 5]);
+        ImGui::SameLine();
+        ImGui::Text("%s: %.0f jobs (%.1f%%)", labels_vec[i], common.company_values[i], percentages[i]);
+    }
+
+    ImGui::End();
+    ImPlot::DestroyContext();
+}
+
 
 /*
 *  This code creates a texture from an image that is in the memory!
@@ -624,84 +681,3 @@ ID3D11ShaderResourceView* DrawThread:: CreateTextureFromImage(const unsigned cha
 
 
 
-//bool DrawThread::StarButton(const char* id, bool& is_starred)
-//{
-//    ImGui::PushID(id);
-//    ImDrawList* draw_list = ImGui::GetWindowDrawList();
-//    ImVec2 p = ImGui::GetCursorScreenPos();
-//    float size = ImGui::GetFrameHeight();
-//    ImVec2 center = ImVec2(p.x + size * 0.5f, p.y + size * 0.5f);
-//
-//    ImGui::InvisibleButton("star_button", ImVec2(size, size));
-//    bool hovered = ImGui::IsItemHovered();
-//    bool clicked = ImGui::IsItemClicked();
-//
-//    if (clicked)
-//        is_starred = !is_starred; // Toggle the state on click
-//
-//    // Choose color: yellow for starred, white otherwise
-//    ImU32 color = is_starred ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
-//
-//    // Draw the star with consistent size and radius
-//    DrawStar(draw_list, center, size * 0.4f, color, is_starred);
-//
-//    ImGui::PopID();
-//    return clicked;
-//}
-//
-//void DrawThread::DrawStar(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color, bool filled) {
-//    const int num_points = 5;
-//    ImVec2 points[num_points * 2];
-//    float start_angle = -IM_PI / 2; // Start with the top point of the star
-//    float angle_increment = IM_PI / num_points;
-//
-//    for (int i = 0; i < num_points * 2; i++) {
-//        // Use consistent radii for all stars
-//        float r = (i % 2 == 0) ? radius : radius * 0.45f;
-//        float angle = start_angle + i * angle_increment;
-//        points[i] = ImVec2(center.x + r * cosf(angle), center.y + r * sinf(angle));
-//    }
-//
-//    // Fill the star only if `filled` is true
-//    if (filled) {
-//        draw_list->AddConvexPolyFilled(points, num_points * 2, color); // Fill inside the star
-//    }
-//
-//    // Draw the outer border on top to ensure it stays visible
-//    draw_list->AddPolyline(points, num_points * 2, IM_COL32(255, 255, 255, 255), true, 2.0f);
-//}
-
-//void DrawThread::saveStarredJobsToFile()
-//{
-//    const std::string default_file_name = "starred_jobs.txt";
-//    std::ofstream out_file;
-//    if (!starred_file_exists) {
-//        out_file.open(default_file_name, std::ios::app);
-//        if (!out_file) {
-//            std::cerr << "Error: Unable to open or create the file: " << default_file_name << std::endl;
-//            return;
-//        }
-//        starred_file_exists = true;
-//    }
-//    else {
-//        out_file.open(default_file_name, std::ios::app);
-//        if (!out_file) {
-//            std::cerr << "Error: Unable to append to the file: " << default_file_name << std::endl;
-//            return;
-//        }
-//    }
-//    for (const auto& job : current_jobs) {
-//        if (job.is_starred) {
-//            out_file << "Title: " << job.title << "\n";
-//            out_file << "Company: " << job.company << "\n";
-//            out_file << "Location: " << job.location << "\n";
-//            out_file << "URL: " << job.url << "\n";
-//            out_file << "Salary: " << job.salary << "\n";
-//            out_file << "Description: " << job.description << "\n";
-//            out_file << "Created Date: " << job.created_date << "\n";
-//            out_file << "-------------------------------------------\n";
-//        }
-//    }
-//    out_file.close();
-//    std::cout << "Starred jobs saved successfully to: " << default_file_name << std::endl;
-//}

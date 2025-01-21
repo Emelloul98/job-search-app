@@ -16,7 +16,7 @@ void DownloadThread::operator()(CommonObjects& common)
         {
             std::unique_lock<std::mutex> lock(common.mtx);
             common.cv.wait(lock, [&common]() {
-                return common.start_job_searching.load() | common.download_jobs_stats.load();
+                return common.start_job_searching.load() | common.download_jobs_stats.load() | common.download_companies_data;
             });
 			if (common.exit_flag) return;
             else if (common.start_job_searching)
@@ -31,6 +31,12 @@ void DownloadThread::operator()(CommonObjects& common)
                 downloadLastYearStats(common);
 				common.stats_data_ready = true;
 				common.download_jobs_stats = false;
+            }
+            else if (common.download_companies_data)
+            {
+				downloadCompaniesData(common);
+				common.companies_data_ready = true;
+				common.download_companies_data = false;
             }
         }
     }
@@ -167,6 +173,46 @@ void DownloadThread::downloadLastYearStats(CommonObjects& common) {
         std::cerr << "Error fetching stats data: " << (res ? std::to_string(res->status) : "Request failed") << std::endl;
     }
 }
+
+void DownloadThread::downloadCompaniesData(CommonObjects& common) {
+    // Construct the URL for the top companies endpoint
+    std::string url = "https://api.adzuna.com/v1/api/jobs/" + common.country + "/top_companies?app_id=" + app_id + "&app_key=" + app_key;
+
+    // Send the GET request using the constructed URL
+    auto res = cli.Get(url);
+
+    if (res && (res->status >= 200 && res->status < 300)) {
+        try {
+            // Parse the raw JSON response
+            nlohmann::json response = nlohmann::json::parse(res->body);
+
+            // Extract the leaderboard data
+            if (response.contains("leaderboard")) {
+                const auto& leaderboard = response["leaderboard"];
+
+                // Clear previous company data
+                common.company_names.clear();
+                common.company_values.clear();
+
+                // Populate company names and values
+                for (const auto& company_data : leaderboard) {
+                    if (company_data.contains("canonical_name") && company_data.contains("count")) {
+                        common.company_names.push_back(company_data["canonical_name"].get<std::string>());
+                        common.company_values.push_back(company_data["count"].get<float>());
+                    }
+                }
+            }
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Error parsing JSON in downloadCompaniesData: " << e.what() << std::endl;
+        }
+    }
+    else {
+        std::cerr << "Error fetching companies data: " << (res ? std::to_string(res->status) : "Request failed") << std::endl;
+    }
+}
+
+
 
 std::string DownloadThread::sanitizeDescription(const std::string& desc) {
     std::string sanitized_desc = desc;
