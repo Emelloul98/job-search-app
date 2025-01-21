@@ -13,6 +13,7 @@ public:
     void RenderBackgroundImage(CommonObjects* common);
     void RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width);
     void display_jobs(CommonObjects* common);
+	void display_job_table(CommonObjects* common);
 
     // Side functions:
     ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels);

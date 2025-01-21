@@ -33,20 +33,19 @@ void DrawAppWindow(void* common_ptr,void* callerPtr) {
 		common->job_page_ready = false;
 		draw_thread->show_jobs_list = true;
     }
-    if(draw_thread->show_jobs_list) draw_thread->display_jobs(common);
+    if(draw_thread->show_jobs_list && draw_thread->show_last_year_stats && draw_thread->show_pie_chart) 
+        draw_thread->display_jobs(common);
+
     if (common->stats_data_ready) 
     {
         draw_thread->show_last_year_stats = true;   
 		common->stats_data_ready = false;
     }
-	if (draw_thread->show_last_year_stats) draw_thread->display_last_year_stats(*common);
     if (common->companies_data_ready) 
     {
 		draw_thread->show_pie_chart = true;
 		common->companies_data_ready = false;
-    }
-    if(draw_thread->show_pie_chart) draw_thread->DrawPieChart(*common);
-    
+    }    
 }
 
 void DrawThread:: RenderBackgroundImage(CommonObjects* common) {
@@ -187,6 +186,15 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
 			current_jobs.clear();
             common->start_job_searching=true;
             common->cv.notify_one();  
+            cout << "notify_one start_job_searching" << endl;
+
+            common->download_companies_data = true;
+            common->cv.notify_one();
+            cout << "notify_one download_companies_data" << endl;
+
+            common->download_jobs_stats = true;
+            common->cv.notify_one();
+            cout << "notify_one download_jobs_stats" << endl;
 
         }
     }
@@ -207,7 +215,8 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.0f);
     
     ImGui::SetCursorPos(ImVec2(favorites_x, favorites_y));
-    if (ImGui::Button("Show Favorite Jobs", ImVec2(favorites_button_width, favorites_button_height))) {
+
+    if (ImGui::Button("Favorites "  ICON_FA_HEART, ImVec2(favorites_button_width, favorites_button_height))) {
         ImGui::OpenPopup("Favorite Jobs");
     }
     // Popup window
@@ -228,7 +237,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
             float windowWidth = ImGui::GetWindowWidth();
             ImGui::SetCursorPosX(windowWidth - 60); // 60 pixels from right edge
             ImGui::PushID(i);
-            if (ImGui::Button(ICON_FA_TRASH)) {
+            if (ImGui::Button(ICON_TRASH_CAN)) {
                 common->favorite_jobs.removeJob(job["id"].get<std::string>());
 				ImGui::PopID();
                 continue;
@@ -265,13 +274,6 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
         }
 
         ImGui::EndChild();
-
-   //     // Close button at the bottom
-   //     if (ImGui::Button("save to file", ImVec2(120, 0))) {
-			//common->favorite_jobs.saveFavorites();
-   //         ImGui::CloseCurrentPopup();
-   //     }
-
         ImGui::EndPopup();
     }
 
@@ -383,6 +385,28 @@ void DrawThread::display_jobs(CommonObjects* common)
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_Appearing);
     ImGui::Begin("Job Finder", &show_jobs_list);
 
+    if (ImGui::BeginTabBar("JobsTabBar"))
+    {
+        if (ImGui::BeginTabItem("All Jobs"))
+        {
+			display_job_table(common);
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Statistics")) {
+            display_last_year_stats(*common);
+			ImGui::EndTabItem();
+        }
+		if (ImGui::BeginTabItem("Companies")) {
+		    DrawPieChart(*common);
+			ImGui::EndTabItem();
+		}
+        ImGui::EndTabBar();
+    }
+    ImGui::End();  
+}
+
+void DrawThread::display_job_table(CommonObjects* common) {
+
     static int selected_job = -1;  // Track which job was clicked
     bool open_popup = false;       // Flag to open popup
 
@@ -467,22 +491,22 @@ void DrawThread::display_jobs(CommonObjects* common)
 
             ImGui::Separator();
             ImGui::TextWrapped("URL: %s", job.url.c_str());
-           
+
         }
         ImGui::EndChild();
 
         Job& job = current_jobs[selected_job];
         bool toRemove = common->favorite_jobs.isJobInFavorites(job.id);
 
-		if (toRemove && jobsButton("Remove from favorite", button_width + 40)){
-			job.is_starred = false;
-			common->favorite_jobs.removeJob(job.id);
-			ImGui::CloseCurrentPopup();
-		}
-        if (!toRemove && jobsButton("Add to favorite", button_width)){
+        if (toRemove && jobsButton("Remove from favorite", button_width + 40)) {
+            job.is_starred = false;
+            common->favorite_jobs.removeJob(job.id);
+            ImGui::CloseCurrentPopup();
+        }
+        if (!toRemove && jobsButton("Add to favorite", button_width)) {
             job.is_starred = true;
             common->favorite_jobs.addJob(job);
-            ImGui::CloseCurrentPopup();   
+            ImGui::CloseCurrentPopup();
         }
 
         ImGui::EndPopup();
@@ -492,30 +516,15 @@ void DrawThread::display_jobs(CommonObjects* common)
     float window_width = ImGui::GetWindowSize().x;
     float button_x = (window_width - button_width) * 0.5f; // Center the button horizontally
     ImGui::SetCursorPosX(button_x);
-    
+
     // Add button to load more jobs
-    if (jobsButton("More Jobs",button_width))
+    if (jobsButton("More Jobs", button_width))
     {
         common->current_page++;
         common->start_job_searching = true;
         common->cv.notify_one();
     }
-
-	ImGui::SameLine();
-    if (jobsButton("Salary data", button_width))
-    {
-		common->download_jobs_stats = true;
-		common->cv.notify_one();
-    }
-    ImGui::SameLine();
-    if (jobsButton("companies data", button_width))
-    {
-        common->download_companies_data = true;
-        common->cv.notify_one();
-    }
-   /* ImGui::SameLine();
-	if (jobsButton("save to file", button_width)) saveStarredJobsToFile();*/
-    ImGui::End();
+    
 }
 
 
@@ -578,7 +587,6 @@ bool DrawThread:: jobsButton(const char* label,float button_width)
 }
 
 void DrawThread::display_last_year_stats(CommonObjects& common) {
-    ImGui::Begin("Salary Data", &show_last_year_stats);
     ImPlot::CreateContext();
     float months[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
     std::string title = "Average Salary Over 2024 in field: " + common.field;
@@ -587,28 +595,22 @@ void DrawThread::display_last_year_stats(CommonObjects& common) {
         ImPlot::PlotLine("Salary", months, common.salaries, 12);
         ImPlot::EndPlot();
     }
-    ImGui::End();
 }
 
 
 void DrawThread::DrawPieChart(CommonObjects& common) {
     ImPlot::CreateContext();
-
-    // Convert data from common into C-style arrays for ImPlot
     const int size = common.company_names.size();
     std::vector<const char*> labels_vec;
     std::vector<float> percentages;
-
     float total = 0.0f;
     for (float value : common.company_values) {
         total += value;
     }
-
     for (int i = 0; i < size; ++i) {
         labels_vec.push_back(common.company_names[i].c_str());
         percentages.push_back((common.company_values[i] / total) * 100.0f);
     }
-
     static const ImVec4 colors[] = {
         ImVec4(0.9f, 0.1f, 0.1f, 1.0f),
         ImVec4(0.1f, 0.9f, 0.1f, 1.0f),
@@ -616,25 +618,33 @@ void DrawThread::DrawPieChart(CommonObjects& common) {
         ImVec4(0.9f, 0.9f, 0.1f, 1.0f),
         ImVec4(0.9f, 0.1f, 0.9f, 1.0f)
     };
-	std::string title = "Company Jobs Distribution in: " + common.country;
-    ImGui::Begin("Pie Chart with Leaderboard",&show_pie_chart);
+
+    std::string title = "Company Jobs Distribution in: " + common.country;
     ImGui::Text(title.c_str());
+
+    ImGui::BeginGroup();
 
     ImPlotFlags plotFlags = ImPlotFlags_NoLegend;
     if (ImPlot::BeginPlot("Jobs Pie Chart", ImVec2(400, 400), plotFlags)) {
         ImPlot::PlotPieChart(labels_vec.data(), percentages.data(), size, 0.5f, 0.5f, 0.4f, "%.1f%%", 90.0f, 0);
         ImPlot::EndPlot();
     }
+    ImGui::EndGroup();
 
-    ImGui::Dummy(ImVec2(0, 10));
+    ImGui::SameLine(450); 
+
+    ImGui::BeginGroup();
     ImGui::Text("Legend:");
+    ImGui::Dummy(ImVec2(0, 10));
+
     for (int i = 0; i < size; ++i) {
-        ImGui::ColorButton(labels_vec[i], colors[i % 5]);
+        ImGui::ColorButton(labels_vec[i], colors[i % 5], ImGuiColorEditFlags_NoTooltip, ImVec2(20, 20));
         ImGui::SameLine();
         ImGui::Text("%s: %.0f jobs (%.1f%%)", labels_vec[i], common.company_values[i], percentages[i]);
+        ImGui::Dummy(ImVec2(0, 5)); 
     }
+    ImGui::EndGroup();
 
-    ImGui::End();
     ImPlot::DestroyContext();
 }
 

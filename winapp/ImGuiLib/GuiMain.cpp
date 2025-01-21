@@ -197,10 +197,14 @@ int GuiMain(drawcallback drawfunction, void* obj_ptr,void* callerPtr)
     static const ImWchar icon_ranges[] = { 0xf000, 0xf3ff, 0 };
     ImFontConfig config;
     config.MergeMode = true;
-    ImFont*  icon_font = io.Fonts->AddFontFromFileTTF("../../fonts/fa-solid-900.ttf", 18.0f, &config, icon_ranges);
+    ImFont* icon_font_regular = io.Fonts->AddFontFromFileTTF("../../fonts/fa-regular-400.ttf", 18.0f, &config, icon_ranges);
+    ImFont* icon_font_solid = io.Fonts->AddFontFromFileTTF("../../fonts/fa-solid-900.ttf", 18.0f, &config, icon_ranges);
+
     io.Fonts->Build();
 
-    IM_ASSERT(icon_font != nullptr);
+    IM_ASSERT(icon_font_regular != nullptr);
+    IM_ASSERT(icon_font_solid != nullptr);
+
     ////////////////////
     
     // Our state
