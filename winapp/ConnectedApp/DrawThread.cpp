@@ -1,3 +1,5 @@
+#pragma once
+
 #include "DrawThread.h"
 #include "GuiMain.h"
 #include <iostream>
@@ -8,7 +10,6 @@
 #include <vector>
 #include <string>
 #include <filesystem>
-
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
@@ -173,7 +174,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, button_size / 2.0f); 
 
     ImGui::SetCursorPosY(button_y); // Only adjust Y position
-    if (ImGui::Button("S", ImVec2(button_size, button_size))) {
+    if (ImGui::Button(ICON_MAGNIFYING_GLASS, ImVec2(button_size, button_size))) {
         if (selected_job_type != -1 && selected_sorte != -1 && selected_field != -1 && selected_location != -1) {
             
             common->country = country_codes.at(locations[selected_location]);
@@ -216,7 +217,23 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
         // Add a little padding
         ImGui::BeginChild("ScrollingRegion", ImVec2(600, 400), true);
 
-        for (const auto& job : favoriteJobs) {
+        for (int i = 0; i < favoriteJobs.size(); i++) {
+            const auto& job = favoriteJobs[i];
+
+            ImVec2 lineStart = ImGui::GetCursorPos();
+
+            float windowWidth = ImGui::GetWindowWidth();
+            ImGui::SetCursorPosX(windowWidth - 60); // 60 pixels from right edge
+            ImGui::PushID(i);
+            if (ImGui::Button(ICON_FA_TRASH)) {
+                common->favorite_jobs.removeJob(job["id"].get<std::string>());
+				ImGui::PopID();
+                continue;
+            }
+			ImGui::PopID();
+   
+            ImGui::SetCursorPos(lineStart);
+
             // Job Title as header
             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 245, 255));
             ImGui::TextWrapped("%s", job["title"].get<std::string>().c_str());
@@ -451,14 +468,18 @@ void DrawThread::display_jobs(CommonObjects* common)
         }
         ImGui::EndChild();
 
-        if (jobsButton("Add to favorite", button_width))
-		{
-			Job& job = current_jobs[selected_job];
-            job.is_starred = true;
-			common->favorite_jobs.addJob(job);
-            
+        Job& job = current_jobs[selected_job];
+        bool toRemove = common->favorite_jobs.isJobInFavorites(job.id);
+
+		if (toRemove && jobsButton("Remove from favorite", button_width + 40)){
+			job.is_starred = false;
+			common->favorite_jobs.removeJob(job.id);
 			ImGui::CloseCurrentPopup();
-           
+		}
+        if (!toRemove && jobsButton("Add to favorite", button_width)){
+            job.is_starred = true;
+            common->favorite_jobs.addJob(job);
+            ImGui::CloseCurrentPopup();   
         }
         ImGui::EndPopup();
 

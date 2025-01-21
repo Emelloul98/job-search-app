@@ -39,9 +39,9 @@ public:
     explicit FavoriteJobs(const std::string& path);
     void saveFavorites(); // saves jobs to file
     bool addJob(const Job& job);
-    //bool removeJob(const std::string& jobId);
+    bool removeJob(const std::string& jobId);
     json getFavorites();
-    //bool isJobInFavorites(const std::string& jobId) const;
+    bool isJobInFavorites(const std::string& jobId) const;
 };
 
 #endif // FAVORITE_JOBS_H

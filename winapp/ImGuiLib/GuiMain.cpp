@@ -1,4 +1,5 @@
-﻿// Dear ImGui: standalone example application for DirectX 11
+﻿
+// Dear ImGui: standalone example application for DirectX 11
 
 // Learn about Dear ImGui:
 // - FAQ                  https://dearimgui.com/faq
@@ -21,7 +22,6 @@ using namespace std::chrono_literals;
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-
 // Data
 ID3D11Device*            g_pd3dDevice = nullptr;
 static ID3D11DeviceContext*     g_pd3dDeviceContext = nullptr;
@@ -193,6 +193,16 @@ int GuiMain(drawcallback drawfunction, void* obj_ptr,void* callerPtr)
     ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\calibril.ttf", 18.0f, nullptr, &ranges[0]);
     IM_ASSERT(font != nullptr);
 
+	//I added this code
+    static const ImWchar icon_ranges[] = { 0xf000, 0xf3ff, 0 };
+    ImFontConfig config;
+    config.MergeMode = true;
+    ImFont*  icon_font = io.Fonts->AddFontFromFileTTF("../../fonts/fa-solid-900.ttf", 18.0f, &config, icon_ranges);
+    io.Fonts->Build();
+
+    IM_ASSERT(icon_font != nullptr);
+    ////////////////////
+    
     // Our state
     bool show_demo_window = true;
     bool show_another_window = false;
