@@ -15,18 +15,11 @@ public:
     void display_jobs(CommonObjects* common);
 	void display_job_table(CommonObjects* common);
     void InitializeTextures();
-
-
     // Side functions:
     void DrawStar(const char* id, bool& is_starred);
     bool jobsButton(const char* label, float button_width);
     void display_last_year_stats(CommonObjects& common);
 	void DrawPieChart(CommonObjects& common);
-    //ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels);
-  /*  void saveStarredJobsToFile();
-    bool StarButton(const char* id, bool& is_starred);*/
-
-
 	// Variables:
     ID3D11ShaderResourceView* texture = nullptr;  
     std::vector<Job> current_jobs;
