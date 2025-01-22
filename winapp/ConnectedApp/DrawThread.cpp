@@ -1,5 +1,4 @@
 #pragma once
-
 #include "DrawThread.h"
 #include "GuiMain.h"
 #include <iostream>
@@ -84,7 +83,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     // Static variables for combo boxes
     static int selected_job_type = -1;
     static int selected_location = -1;
-    static int selected_sorte = -1;
+    static int selected_days_old = -1;
     static int selected_field = -1;
 
     // Define options for each combo box
@@ -102,7 +101,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
         "other-general" 
     };
     static const char* job_types[] = {"All", "Full Time", "Part Time"};
-    static const char* sorted_by[] = {"Date", "Salary", "Relevance"};
+    static const char* max_days_old[] = {"All", "10", "20", "30","60"};
 
 
     // Set up the main container style
@@ -154,7 +153,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     // Role Column
     ImGui::NextColumn();
     ImGui::SetColumnWidth(3, column_width);
-    RenderCustomComboBox("Sorted by", sorted_by, IM_ARRAYSIZE(sorted_by), &selected_sorte, column_width);
+    RenderCustomComboBox("Maximum days old", max_days_old, IM_ARRAYSIZE(max_days_old), &selected_days_old, column_width);
 
     // Move button inside the group, after the last column
     ImGui::NextColumn();
@@ -169,7 +168,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     ImGui::SetCursorPosY(button_y); // Only adjust Y position
     if (ImGui::Button(ICON_MAGNIFYING_GLASS, ImVec2(button_size, button_size))) {
 
-        if (selected_job_type != -1 && selected_sorte != -1 && selected_field != -1 && selected_location != -1) {
+        if (selected_job_type != -1 && selected_days_old != -1 && selected_field != -1 && selected_location != -1) {
             common->job_page_ready = false;
             common->stats_data_ready = false;
             common->companies_data_ready = false;
@@ -179,7 +178,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
             common->country = country_codes.at(locations[selected_location]);
 			common->field = fields[selected_field];
 			common->job_type = job_types[selected_job_type];
-            common->sorted_by = sorted_by[selected_sorte];
+            common->max_days_old = max_days_old[selected_days_old];
 			current_jobs.clear();
             common->start_job_searching=true;
             common->cv.notify_one();  

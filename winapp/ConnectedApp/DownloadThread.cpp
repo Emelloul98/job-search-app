@@ -31,7 +31,6 @@ void DownloadThread::operator()(CommonObjects& common)
                 common.stats_data_ready = true;
                 downloadCompaniesData(common);
                 common.companies_data_ready = true;
-
 			}
         }
     }
@@ -42,12 +41,12 @@ void DownloadThread::searchJobs(CommonObjects& common)
     std::string current_country = common.country;
     std::string current_category = common.field + "-jobs";
     // Construct the URL for the "teaching-jobs" category
-    std::string url = "https://api.adzuna.com/v1/api/jobs/" + current_country + "/search/" + std::to_string(common.current_page) + "?app_id=" + app_id + "&app_key=" + app_key + "&results_per_page=10&category=" + current_category;
-
-    if (!common.sorted_by.empty()) {
-        common.sorted_by[0] = std::tolower(common.sorted_by[0]);
-        url += "&sort_by=" + common.sorted_by;
+    std::string url = "https://api.adzuna.com/v1/api/jobs/" + current_country + "/search/" + std::to_string(common.current_page) + "?app_id=" + app_id + "&app_key=" + app_key + "&results_per_page=10";
+    if (common.max_days_old != "All") {
+        url += "&max_days_old=" + common.max_days_old;
     }
+    url += "&category=" + current_category;
+	url += "&sort_by=date";
     if (common.job_type == "Full Time") {
         url += "&full_time=1";
     }

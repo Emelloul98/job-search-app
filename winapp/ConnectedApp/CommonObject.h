@@ -24,7 +24,7 @@ struct CommonObjects
 	std::string country;
 	std::string field;
 	std::string job_type;
-	std::string sorted_by;
+	std::string max_days_old;
 	float salaries[12] = { 0 };
 	FavoriteJobs favorite_jobs = FavoriteJobs("favorite_jobs.json");
 	std::vector<std::string> company_names; 
