@@ -27,6 +27,6 @@ Thumbs.db
 .vscode/
 
 # Ignore x64/Debug directory
-winapp/ConnectedApp/x64/Debug/
+winapp/ConnectedApp/x64/Debug
 winapp/ConnectedApp/imgui.ini
 winapp/ImGuiLib/x64/Debug
