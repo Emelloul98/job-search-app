@@ -61,11 +61,11 @@ void DownloadThread::searchJobs(CommonObjects& common)
         try {
             // Parse the raw JSON response
             nlohmann::json response = nlohmann::json::parse(res->body);
+			//std::cout << response << std::endl;
             common.jobs.clear();
             // Initialize the jobs vector from the response            
             for (const auto& job_data : response["results"]) {
                 Job job;
-
                 // Extract title and company name (check if they exist)
                 job.title = job_data.contains("title") ? job_data["title"].get<std::string>() : "Unknown Title";
                 if (job_data.contains("company") && job_data["company"].contains("display_name")) {

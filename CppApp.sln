@@ -22,6 +22,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imPlot", "imPlot\imPlot.vcxitems", "{0EAD719C-4010-493D-9A07-FDF32CE41AA0}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "images", "images", "{A2AE45B4-FE13-4EBF-B429-E80F81AFFAAE}"
+	ProjectSection(SolutionItems) = preProject
+		images\background.jpg = images\background.jpg
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64

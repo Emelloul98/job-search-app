@@ -46,9 +46,10 @@ bool LoadTextureFromFile(const char* filename, ID3D11ShaderResourceView** out_sr
     int image_width = 0;
     int image_height = 0;
     unsigned char* image_data = stbi_load(filename, &image_width, &image_height, NULL, 4);
-    if (image_data == NULL)
+    if (image_data == NULL) {
+        std::cerr << "Failed to load image from file: " << filename << std::endl;
         return false;
-
+    }
     // Create texture
     D3D11_TEXTURE2D_DESC desc;
     ZeroMemory(&desc, sizeof(desc));

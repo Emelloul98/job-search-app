@@ -14,18 +14,21 @@ public:
     void RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width);
     void display_jobs(CommonObjects* common);
 	void display_job_table(CommonObjects* common);
+    void InitializeTextures();
+
 
     // Side functions:
-    ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels);
     void DrawStar(const char* id, bool& is_starred);
     bool jobsButton(const char* label, float button_width);
     void display_last_year_stats(CommonObjects& common);
 	void DrawPieChart(CommonObjects& common);
+    //ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels);
   /*  void saveStarredJobsToFile();
     bool StarButton(const char* id, bool& is_starred);*/
 
 
 	// Variables:
+    ID3D11ShaderResourceView* texture = nullptr;  
     std::vector<Job> current_jobs;
     const std::unordered_map<std::string, std::string> country_codes = {
             {"United Kingdom", "gb"},
