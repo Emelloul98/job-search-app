@@ -16,7 +16,7 @@ public:
 	void display_job_table(CommonObjects* common);
     void InitializeTextures();
     // Side functions:
-    void DrawStar(const char* id, bool& is_starred);
+    bool DrawStar(const char* id, bool& is_starred);
     bool jobsButton(const char* label, float button_width);
     void display_last_year_stats(CommonObjects& common);
 	void DrawPieChart(CommonObjects& common);

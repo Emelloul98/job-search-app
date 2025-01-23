@@ -114,6 +114,7 @@ void DownloadThread::searchJobs(CommonObjects& common)
 				// Extract job ID (check if exists)
                 job.id = job_data.contains("id") ? job_data["id"].get<std::string>() : "Unknown ID";
 
+				job.is_starred = common.favorite_jobs.isJobInFavorites(job.id);
                 // Add the job to the jobs vector
                 common.jobs.push_back(job);
             }
