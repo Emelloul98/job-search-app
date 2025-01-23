@@ -442,11 +442,23 @@ void DrawThread::display_job_table(CommonObjects* common) {
 				}
 			}
             ImGui::TableNextColumn();
-            std::string button_id = "show##" + std::to_string(i);
-			if (ImGui::Button(button_id.c_str(), ImVec2(50, 20))) {
+
+            //std::string button_id = "show##" + std::to_string(i);
+			/*if (ImGui::Button(button_id.c_str(), ImVec2(50, 20))) {
 				selected_job = i;
 				show_job_details = true;
-			}
+			}*/
+
+			// Set cursor position to center the checkbox:
+            ImVec2 cell_size = ImGui::GetContentRegionAvail();
+            float checkbox_size = ImGui::GetFrameHeight(); 
+            float offset_x = (cell_size.x - checkbox_size) * 0.5f;
+			// centering the checkbox
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset_x);
+            std::string checkbox_id = "##select_job_" + std::to_string(i);
+            bool is_selected = (selected_job == i);
+			// showing the checkbox:
+            if (ImGui::Checkbox(checkbox_id.c_str(), &is_selected)) selected_job = is_selected ? i : -1;
         }
         ImGui::EndTable();
     }
@@ -459,16 +471,17 @@ void DrawThread::display_job_table(CommonObjects* common) {
         ImGui::OpenPopup("Job Details");
 
         // Center popup in the middle of the window
-        /*ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));*/
+        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
         // Set fixed size for popup
-        //ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_Always);
         if (ImGui::BeginPopupModal("Job Details", &show_job_details))
         {
 
             // Begin a child window that will contain all content with vertical scrolling
             ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing() - 8), true);
+            // to remove:
             if (selected_job >= 0 && selected_job < current_jobs.size())
             {
                 Job& job = current_jobs[selected_job];
@@ -521,7 +534,11 @@ void DrawThread::display_job_table(CommonObjects* common) {
         common->start_job_searching = true;
         common->cv.notify_one();
     }
-    
+	ImGui::SameLine();
+    if (jobsButton("Show details", button_width))
+    {
+        show_job_details = true;
+    }
 }
 
 bool DrawThread::DrawStar(const char* id, bool& is_starred)
@@ -567,7 +584,6 @@ bool DrawThread::DrawStar(const char* id, bool& is_starred)
     ImGui::PopID();
 	return clicked;
 }
-
 
 bool DrawThread:: jobsButton(const char* label,float button_width)
 {

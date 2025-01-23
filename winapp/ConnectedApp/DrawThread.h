@@ -48,5 +48,6 @@ public:
     bool show_last_year_stats = false;
     bool starred_file_exists = false;
 	bool show_pie_chart = false;
+    std::string current_tab = "All Jobs";
 };
 void DrawAppWindow(void* common_ptr, void* callerPtr);
