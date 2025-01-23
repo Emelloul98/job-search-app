@@ -31,17 +31,17 @@ using json = nlohmann::json;
 class FavoriteJobs {
 private:
     std::string filePath;
-    json favorites;
+    std::unordered_map<std::string, Job> favorites;
 
     void loadFavorites();  // loads jobs from file
 
 public:
     explicit FavoriteJobs(const std::string& path);
-    void saveFavorites(); // saves jobs to file
     bool addJob(const Job& job);
     bool removeJob(const std::string& jobId);
-    json getFavorites();
+    std::unordered_map<std::string, Job> getFavorites();
     bool isJobInFavorites(const std::string& jobId) const;
+    void saveFavorites();
 };
 
 #endif // FAVORITE_JOBS_H

@@ -198,35 +198,37 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     float favorites_x = center_position + (searchbar_width - favorites_button_width) * 0.5f;
     float favorites_y = searchbar_y_pos + searchbar_height + favorites_y_offset;
 
+    static bool favorite_jobs_is_open = false;
+
     // Style for favorites button
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.0f);
     
     ImGui::SetCursorPos(ImVec2(favorites_x, favorites_y));
 
     if (ImGui::Button("Favorites "  ICON_FA_HEART, ImVec2(favorites_button_width, favorites_button_height))) {
+		favorite_jobs_is_open = true;
         ImGui::OpenPopup("Favorite Jobs");
     }
     // Popup window
 
-    bool favorite_jobs_is_open = true;
 
     if (ImGui::BeginPopupModal("Favorite Jobs", &favorite_jobs_is_open, ImGuiWindowFlags_AlwaysAutoResize)) {
-        json favoriteJobs  = common->favorite_jobs.getFavorites();
+        std::unordered_map<std::string, Job> favoriteJobs  = common->favorite_jobs.getFavorites();
 
         // Add a little padding
         ImGui::BeginChild("ScrollingRegion", ImVec2(600, 400), true);
 
-        for (int i = 0; i < favoriteJobs.size(); i++) {
-            const auto& job = favoriteJobs[i];
-
+        for (const auto& [job_id, job] : favoriteJobs) {
+			int i = 0;
             ImVec2 lineStart = ImGui::GetCursorPos();
 
             float windowWidth = ImGui::GetWindowWidth();
             ImGui::SetCursorPosX(windowWidth - 60); // 60 pixels from right edge
             ImGui::PushID(i);
             if (ImGui::Button(ICON_TRASH_CAN)) {
-                common->favorite_jobs.removeJob(job["id"].get<std::string>());
+                common->favorite_jobs.removeJob(job_id);
 				ImGui::PopID();
+                i++;
                 continue;
             }
 			ImGui::PopID();
@@ -235,31 +237,30 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
 
             // Job Title as header
             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 245, 255));
-            ImGui::TextWrapped("%s", job["title"].get<std::string>().c_str());
+            ImGui::TextWrapped("%s", job.title.c_str());
             ImGui::PopStyleColor();
 
             // Company
-            ImGui::TextWrapped("Company: %s", job["company"].get<std::string>().c_str());
+            ImGui::TextWrapped("Company: %s", job.company.c_str());
 
             // Location
-            ImGui::TextWrapped("Location: %s", job["location"].get<std::string>().c_str());
+            ImGui::TextWrapped("Location: %s", job.location.c_str());
 
             // Salary
-            ImGui::TextWrapped("Salary: %s", job["salary"].get<std::string>().c_str());
-
-            // Description (limited to prevent too long text)
-            std::string desc = job["description"].get<std::string>();
-            if (desc.length() > 200) {
-                desc = desc.substr(0, 200) + "...";
-            }
-            ImGui::TextWrapped("Description: %s", desc.c_str());
+            ImGui::TextWrapped("Salary: %s", job.salary.c_str());
+            
+            ImGui::TextWrapped("Description: %s", job.description.c_str());
 
             // Add some spacing between jobs
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
+            i++;
         }
-
+        if (ImGui::Button("Save Favorites")) {
+            common->favorite_jobs.saveFavorites();
+			favorite_jobs_is_open = false;
+        }
         ImGui::EndChild();
         ImGui::EndPopup();
     }

@@ -1,89 +1,83 @@
 #include "FavoriteJobs.h"
 
-json jobToJson(const Job& job) {
-    return {
-        {"title", job.title},
-        {"company", job.company},
-        {"location", job.location},
-        {"url", job.url},
-        {"salary", job.salary},
-        {"description", job.description},
-        {"created_date", job.created_date},
-        {"id", job.id},
-        {"is_expanded", job.is_expanded},
-        {"is_starred", job.is_starred}
-    };
-}
-
 FavoriteJobs::FavoriteJobs(const std::string& path) : filePath(path) {
     loadFavorites();
 }
 
 void FavoriteJobs::loadFavorites() {
+    std::ifstream file(filePath);
+    if (!file) {
+        return;
+    }
+
     try {
-        std::ifstream file(filePath);
-        if (file.is_open()) {
-            favorites.clear();
-            file >> favorites;
-            file.close();
-        }
-        else {
-            favorites = json::array();
-            saveFavorites();
+        json j = json::parse(file);
+        for (const auto& item : j.items()) {
+            Job job;
+            job.id = item.key();
+            job.title = item.value()["title"];
+            job.company = item.value()["company"];
+            job.location = item.value()["location"];
+            job.url = item.value()["url"];
+            job.salary = item.value()["salary"];
+            job.description = item.value()["description"];
+            job.created_date = item.value()["created_date"];
+            job.is_starred = item.value()["is_starred"];
+            favorites[job.id] = job;
         }
     }
     catch (const std::exception& e) {
-        std::cerr << "Error loading file: " << e.what() << std::endl;
-        favorites = json::array();
+        std::cerr << "Error loading favorites: " << e.what() << std::endl;
+        favorites.clear();
+    }
+    catch (...) {
+        std::cerr << "Unknown error loading favorites" << std::endl;
+        favorites.clear();
     }
 }
-
-void FavoriteJobs::saveFavorites() { //mabye with thread
-    try {
-        std::ofstream file(filePath);
-        if (file.is_open()) {
-            file << std::setw(4) << favorites << std::endl;
-            file.close();
-        }
-        else {
-            std::cerr << "Cannot open file for writing" << std::endl;
-        }
-    }
-    catch (const std::exception& e) {
-        std::cerr << "Error saving file: " << e.what() << std::endl;
-    }
-}
-
 
 bool FavoriteJobs::addJob(const Job& job) {
-    json jobJson = jobToJson(job);
-    favorites.push_back(jobJson);
-    saveFavorites();
+    if (favorites.find(job.id) != favorites.end()) {
+        return false;
+    }
+    favorites[job.id] = job;
     return true;
 }
 
-json FavoriteJobs:: getFavorites() {
+bool FavoriteJobs::removeJob(const std::string& jobId) {
+    if (favorites.erase(jobId) == 0) {
+        return false;
+    }
+    return true;
+}
+
+std::unordered_map<std::string, Job> FavoriteJobs::getFavorites() {
     return favorites;
 }
 
 bool FavoriteJobs::isJobInFavorites(const std::string& jobId) const {
-    return std::any_of(favorites.begin(), favorites.end(),
-        [&jobId](const json& jobJson) {
-            return jobJson["id"] == jobId;
-        });
+    return favorites.find(jobId) != favorites.end();
 }
 
-bool FavoriteJobs::removeJob(const std::string& jobId) {
-    auto it = std::remove_if(favorites.begin(), favorites.end(),
-        [&jobId](const json& jobJson) {
-            return jobJson["id"] == jobId;
-        });
-
-    if (it != favorites.end()) {
-        favorites.erase(it, favorites.end());
-        saveFavorites();
-        return true;
+void FavoriteJobs::saveFavorites() {
+    std::ofstream file(filePath, std::ios::trunc);
+    if (!file) {
+        throw std::runtime_error("Could not open file for writing");
     }
-    return false;
+    json j;
+    for (const auto& [id, job] : favorites) {
+        j[id] = {
+            {"title", job.title},
+            {"company", job.company},
+            {"location", job.location},
+            {"url", job.url},
+            {"salary", job.salary},
+            {"description", job.description},
+            {"created_date", job.created_date},
+            {"is_starred", job.is_starred}
+        }; 
+    }
+    file << j.dump(4);
 }
+
 
