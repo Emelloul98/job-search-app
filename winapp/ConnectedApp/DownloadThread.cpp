@@ -16,21 +16,25 @@ void DownloadThread::operator()(CommonObjects& common)
         {
             std::unique_lock<std::mutex> lock(common.mtx);
             common.cv.wait(lock, [&common]() {
-                return common.start_job_searching.load();
+                return common.start_job_searching.load() || common.save_favorites_to_file.load();
             });
 			if (common.exit_flag) return;
           
-            searchJobs(common);
-            common.start_job_searching = false;
-			common.job_page_ready = true;
-            std::cout << "Full data ready" << std::endl;
-               
-			if (common.current_page == 1)
-			{
-                downloadLastYearStats(common);
-                common.stats_data_ready = true;
-                downloadCompaniesData(common);
-                common.companies_data_ready = true;
+            if (common.start_job_searching) {
+                searchJobs(common);
+                common.start_job_searching = false;
+                common.job_page_ready = true;
+                std::cout << "Full data ready" << std::endl;
+                if (common.current_page == 1) {
+                    downloadLastYearStats(common);
+                    common.stats_data_ready = true;
+                    downloadCompaniesData(common);
+                    common.companies_data_ready = true;
+                }
+            }
+			if (common.save_favorites_to_file) {
+				common.favorite_jobs.saveFavorites();
+				common.save_favorites_to_file = false;
 			}
         }
     }
@@ -61,7 +65,20 @@ void DownloadThread::searchJobs(CommonObjects& common)
         try {
             // Parse the raw JSON response
             nlohmann::json response = nlohmann::json::parse(res->body);
-			//std::cout << response << std::endl;
+
+            size_t total_pages = ceil(response["count"].get<int>() / 10);
+
+			if (total_pages == 0) {
+                common.no_jobs_at_all = true;
+			}
+			if (common.current_page < total_pages) {
+				common.show_more_jobs_button = true;
+            }
+            else {
+				common.show_more_jobs_button = false;
+            }
+                
+             //std::cout << response << std::endl;
             common.jobs.clear();
             // Initialize the jobs vector from the response            
             for (const auto& job_data : response["results"]) {

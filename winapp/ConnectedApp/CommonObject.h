@@ -16,6 +16,10 @@ struct CommonObjects
 	std::atomic_bool job_page_ready = false;
 	std::atomic_bool stats_data_ready = false;
 	std::atomic_bool companies_data_ready = false;
+	std::atomic_bool save_favorites_to_file = false;
+	std::atomic_bool show_more_jobs_button = false;
+	std::atomic_bool no_jobs_at_all = false;
+
 
 	std::string url;
 	std::vector<Job> jobs;

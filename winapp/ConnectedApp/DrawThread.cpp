@@ -176,6 +176,8 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
             common->companies_data_ready = false;
 			common->current_page = 1;
 			common->exit_flag = false;
+			common->show_more_jobs_button = false;
+			common->no_jobs_at_all = false;
 
             common->country = country_codes.at(locations[selected_location]);
 			common->field = fields[selected_field];
@@ -194,7 +196,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     // Add Favorites button below the search bar
     const float favorites_button_width = 200.0f;  // Width of favorites button
     const float favorites_button_height = 50.0f;  // Height of favorites button
-    const float favorites_y_offset = 20.0f;       // Space between searchbar and favorites button
+    const float favorites_y_offset = 200.0f;       // Space between searchbar and favorites button
 
      // Calculate position for centered favorites button
     float favorites_x = center_position + (searchbar_width - favorites_button_width) * 0.5f;
@@ -213,24 +215,34 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     }
     // Popup window
 
+    ImVec2 display_size = ImGui::GetIO().DisplaySize;
 
-    if (ImGui::BeginPopupModal("Favorite Jobs", &favorite_jobs_is_open, ImGuiWindowFlags_AlwaysAutoResize)) {
+    ImVec2 favorites_window_size = ImVec2(610, 470);
+
+    ImVec2 window_pos = ImVec2(
+        (display_size.x - favorites_window_size.x) * 0.5f,
+        (display_size.y - favorites_window_size.y) * 0.5f
+    );
+
+    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Appearing);
+    // Set fixed size for popup
+    ImGui::SetNextWindowSize(favorites_window_size);
+
+    if (ImGui::BeginPopupModal("Favorite Jobs", &favorite_jobs_is_open)) {
         std::unordered_map<std::string, Job> favoriteJobs  = common->favorite_jobs.getFavorites();
 
         // Add a little padding
         ImGui::BeginChild("ScrollingRegion", ImVec2(600, 400), true);
 
         for (const auto& [job_id, job] : favoriteJobs) {
-			int i = 0;
             ImVec2 lineStart = ImGui::GetCursorPos();
 
             float windowWidth = ImGui::GetWindowWidth();
             ImGui::SetCursorPosX(windowWidth - 60); // 60 pixels from right edge
-            ImGui::PushID(i);
+            ImGui::PushID(job_id.c_str());
             if (ImGui::Button(ICON_TRASH_CAN)) {
                 common->favorite_jobs.removeJob(job_id);
 				ImGui::PopID();
-                i++;
                 continue;
             }
 			ImGui::PopID();
@@ -257,13 +269,18 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            i++;
-        }
-        if (ImGui::Button("Save Favorites")) {
-            common->favorite_jobs.saveFavorites();
-			favorite_jobs_is_open = false;
         }
         ImGui::EndChild();
+
+		std::string title = "Save Favorites";
+        float center_x = ImGui::GetWindowWidth() / 2;
+        float button_width = ImGui::CalcTextSize(title.c_str()).x + 20; // 20 pixels padding
+        ImGui::SetCursorPosX(center_x - button_width / 2);
+        if (ImGui::Button(title.c_str())) {
+			common->save_favorites_to_file = true;
+			common->cv.notify_one();
+			favorite_jobs_is_open = false;
+        }
         ImGui::EndPopup();
     }
 
@@ -369,18 +386,35 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
 
 void DrawThread::display_frame_pages(CommonObjects* common)
 {
-    ImVec2 mainViewportSize = ImGui::GetMainViewport()->Size;
-    ImVec2 windowSize = ImVec2(mainViewportSize.x * 0.8f, mainViewportSize.y * 0.8f);
-    ImGui::SetNextWindowSize(windowSize);
+    ImVec2 display_size = ImGui::GetIO().DisplaySize;
 
+    ImVec2 window_size = ImVec2(950, 550); 
+
+    ImVec2 window_pos = ImVec2(
+        (display_size.x - window_size.x) * 0.5f, 
+        (display_size.y - window_size.y) * 0.5f  
+    );
+
+    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Appearing);
+    // Set fixed size for popup
+    ImGui::SetNextWindowSize(window_size);
+
+    static bool first_time = true;
 	ImGui::OpenPopup("Job Finder");
     if (ImGui::BeginPopupModal("Job Finder", &show_jobs_list)){
-        if (ImGui::BeginTabBar("JobsTabBar"))
+
+        if (ImGui::BeginTabBar("JobsTabBar", ImGuiTabBarFlags_AutoSelectNewTabs))
         {
-            if (ImGui::BeginTabItem("All Jobs"))
-            {
-                display_job_table(common);
+           
+            if (ImGui::BeginTabItem("All Jobs", nullptr, first_time ? ImGuiTabItemFlags_SetSelected : 0)) {
+				if (common->no_jobs_at_all) {
+					ImGui::Text("No jobs found for the selected criteria.");
+				}
+                else {
+                    display_job_table(common);
+                }
                 ImGui::EndTabItem();
+                first_time = false;
             }
             if (ImGui::BeginTabItem("Statistics")) {
                 if (common->stats_data_ready)
@@ -392,16 +426,24 @@ void DrawThread::display_frame_pages(CommonObjects* common)
                     DrawPieChart(*common);
                 ImGui::EndTabItem();
             }
+
             ImGui::EndTabBar();
         }
         ImGui::EndPopup();
     }
+    if (!show_jobs_list) {
+        first_time = true;
+    }
+
 }
 
 void DrawThread::display_job_table(CommonObjects* common) {
 
     static int selected_job = -1;  // Track which job was clicked
     static bool show_job_details = false;       // Flag to open popup
+
+    float table_height = 440.0f;
+    ImGui::BeginChild("TableScrollingRegion", ImVec2(0, table_height), true);
 
     if (ImGui::BeginTable("JobTable", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
     {
@@ -410,8 +452,8 @@ void DrawThread::display_job_table(CommonObjects* common) {
         ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Company", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Location", ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthFixed, 70.0f);
-        ImGui::TableSetupColumn("Star", ImGuiTableColumnFlags_WidthFixed, 25.0f);
+        ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Star", ImGuiTableColumnFlags_WidthFixed, 27.0f);
         ImGui::TableSetupColumn("View", ImGuiTableColumnFlags_WidthFixed, 35.0f);
 
         ImGui::TableHeadersRow();
@@ -437,9 +479,6 @@ void DrawThread::display_job_table(CommonObjects* common) {
             ImGui::TextWrapped("%s", job.location.c_str());
             ImGui::TableNextColumn();
             ImGui::AlignTextToFramePadding();
-            column_width = ImGui::GetColumnWidth();
-            text_width = ImGui::CalcTextSize(job.salary.c_str()).x;
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (column_width - text_width) * 0.5f);
             ImGui::TextWrapped("%s", job.salary.c_str());
 
             ImGui::TableNextColumn();
@@ -467,6 +506,7 @@ void DrawThread::display_job_table(CommonObjects* common) {
         }
         ImGui::EndTable();
     }
+    ImGui::EndChild();
 
     float button_width = 120.0f; // Width of the button
 
@@ -480,12 +520,12 @@ void DrawThread::display_job_table(CommonObjects* common) {
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
         // Set fixed size for popup
-        ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(600, 450), ImGuiCond_Always);
         if (ImGui::BeginPopupModal("Job Details", &show_job_details))
         {
 
             // Begin a child window that will contain all content with vertical scrolling
-            ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing() - 8), true);
+            ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing() - 17), true);
             // to remove:
             if (selected_job >= 0 && selected_job < current_jobs.size())
             {
@@ -512,16 +552,22 @@ void DrawThread::display_job_table(CommonObjects* common) {
             Job& job = current_jobs[selected_job];
             bool toRemove = common->favorite_jobs.isJobInFavorites(job.id);
 
+            float window_width = ImGui::GetWindowWidth();
+            float x_pos = (window_width - button_width - 40) / 2;
+            ImGui::SetCursorPosX(x_pos);
+            
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
             if (toRemove && jobsButton("Remove from favorite", button_width + 40)) {
                 job.is_starred = false;
                 common->favorite_jobs.removeJob(job.id);
-                //ImGui::CloseCurrentPopup();
             }
+            ImGui::SetCursorPosX(x_pos + 20);
+
             if (!toRemove && jobsButton("Add to favorite", button_width)) {
                 job.is_starred = true;
                 common->favorite_jobs.addJob(job);
-                //ImGui::CloseCurrentPopup();
             }
+            ImGui::PopStyleVar();
 
             ImGui::EndPopup();
 
@@ -532,12 +578,14 @@ void DrawThread::display_job_table(CommonObjects* common) {
     float button_x = (window_width - button_width) * 0.5f; // Center the button horizontally
     ImGui::SetCursorPosX(button_x);
 
-    // Add button to load more jobs
-    if (jobsButton("More Jobs", button_width))
-    {
-        common->current_page++;
-        common->start_job_searching = true;
-        common->cv.notify_one();
+    if (common->show_more_jobs_button) {
+        // Add button to load more jobs
+        if (jobsButton("More Jobs", button_width))
+        {
+            common->current_page++;
+            common->start_job_searching = true;
+            common->cv.notify_one();
+        }
     }
 	ImGui::SameLine();
 }
