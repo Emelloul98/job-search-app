@@ -12,7 +12,7 @@ public:
     void RenderSearchBar(CommonObjects* common);
     void RenderBackgroundImage(CommonObjects* common);
     void RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width);
-    void display_jobs(CommonObjects* common);
+    void display_frame_pages(CommonObjects* common);
 	void display_job_table(CommonObjects* common);
     void InitializeTextures();
     // Side functions:

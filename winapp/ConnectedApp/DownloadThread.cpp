@@ -218,6 +218,7 @@ std::string DownloadThread::sanitizeDescription(const std::string& desc) {
 
     return sanitized_desc;
 }
+
 std::string DownloadThread::formatNumberWithCommas(int number) {
     std::stringstream ss;
     ss.imbue(std::locale(""));

@@ -19,6 +19,7 @@ void DrawThread:: operator()(CommonObjects& common) {
     GuiMain(DrawAppWindow, &common, this);
     common.exit_flag = true;
 }
+
 void DrawAppWindow(void* common_ptr,void* callerPtr) {
     auto common = static_cast<CommonObjects*>(common_ptr);
     auto draw_thread = (DrawThread*)callerPtr;
@@ -34,7 +35,7 @@ void DrawAppWindow(void* common_ptr,void* callerPtr) {
 		draw_thread->show_jobs_list = true;
     }
     if(draw_thread->show_jobs_list)
-        draw_thread->display_jobs(common);
+        draw_thread->display_frame_pages(common);
 
 }
 
@@ -46,6 +47,7 @@ void DrawThread::InitializeTextures() {
         std::cerr << "Failed to load image!" << std::endl;
     }
 }
+
 void DrawThread::RenderBackgroundImage(CommonObjects* common) {
     // Get the window size
     ImVec2 window_size = ImGui::GetIO().DisplaySize;
@@ -365,7 +367,7 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
     ImGui::PopID();
 }
 
-void DrawThread::display_jobs(CommonObjects* common)
+void DrawThread::display_frame_pages(CommonObjects* common)
 {
     ImVec2 mainViewportSize = ImGui::GetMainViewport()->Size;
     ImVec2 windowSize = ImVec2(mainViewportSize.x * 0.8f, mainViewportSize.y * 0.8f);
@@ -443,22 +445,11 @@ void DrawThread::display_job_table(CommonObjects* common) {
 			}
             ImGui::TableNextColumn();
 
-            //std::string button_id = "show##" + std::to_string(i);
-			/*if (ImGui::Button(button_id.c_str(), ImVec2(50, 20))) {
+            std::string button_id = "show##" + std::to_string(i);
+			if (ImGui::Button(button_id.c_str(), ImVec2(50, 20))) {
 				selected_job = i;
 				show_job_details = true;
-			}*/
-
-			// Set cursor position to center the checkbox:
-            ImVec2 cell_size = ImGui::GetContentRegionAvail();
-            float checkbox_size = ImGui::GetFrameHeight(); 
-            float offset_x = (cell_size.x - checkbox_size) * 0.5f;
-			// centering the checkbox
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset_x);
-            std::string checkbox_id = "##select_job_" + std::to_string(i);
-            bool is_selected = (selected_job == i);
-			// showing the checkbox:
-            if (ImGui::Checkbox(checkbox_id.c_str(), &is_selected)) selected_job = is_selected ? i : -1;
+			}
         }
         ImGui::EndTable();
     }
@@ -535,10 +526,6 @@ void DrawThread::display_job_table(CommonObjects* common) {
         common->cv.notify_one();
     }
 	ImGui::SameLine();
-    if (jobsButton("Show details", button_width))
-    {
-        show_job_details = true;
-    }
 }
 
 bool DrawThread::DrawStar(const char* id, bool& is_starred)
