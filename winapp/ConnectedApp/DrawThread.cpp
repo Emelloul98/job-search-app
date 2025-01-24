@@ -411,28 +411,39 @@ void DrawThread::display_job_table(CommonObjects* common) {
         ImGui::TableSetupColumn("Company", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Location", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthFixed, 70.0f);
-        ImGui::TableSetupColumn("Star", ImGuiTableColumnFlags_WidthFixed, 30.0f);
-        ImGui::TableSetupColumn("More", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+        ImGui::TableSetupColumn("Star", ImGuiTableColumnFlags_WidthFixed, 25.0f);
+        ImGui::TableSetupColumn("View", ImGuiTableColumnFlags_WidthFixed, 35.0f);
 
         ImGui::TableHeadersRow();
 
+		float column_width = 0.0f;
+		float text_width = 0.0f;
         // Iterate over the jobs and create rows in the table
         for (size_t i = 0; i < current_jobs.size(); ++i)
         {
             Job& job = current_jobs[i];
             ImGui::TableNextRow();
             ImGui::TableNextColumn();  // Move to first column
+            ImGui::AlignTextToFramePadding();
 			ImGui::Text("%d", i + 1);
             ImGui::TableNextColumn();
+            ImGui::AlignTextToFramePadding();
             ImGui::TextWrapped("%s", job.title.c_str());
             ImGui::TableNextColumn();
+            ImGui::AlignTextToFramePadding();
             ImGui::TextWrapped("%s", job.company.c_str());
             ImGui::TableNextColumn();
+            ImGui::AlignTextToFramePadding();
             ImGui::TextWrapped("%s", job.location.c_str());
             ImGui::TableNextColumn();
+            ImGui::AlignTextToFramePadding();
+            column_width = ImGui::GetColumnWidth();
+            text_width = ImGui::CalcTextSize(job.salary.c_str()).x;
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (column_width - text_width) * 0.5f);
             ImGui::TextWrapped("%s", job.salary.c_str());
 
             ImGui::TableNextColumn();
+            ImGui::AlignTextToFramePadding();
             std::string star_id = "star_button_" + std::to_string(i + 1);
             bool is_clicked = DrawStar(star_id.c_str(), job.is_starred);
 			if (is_clicked) {
@@ -444,12 +455,15 @@ void DrawThread::display_job_table(CommonObjects* common) {
 				}
 			}
             ImGui::TableNextColumn();
-
-            std::string button_id = "show##" + std::to_string(i);
-			if (ImGui::Button(button_id.c_str(), ImVec2(50, 20))) {
-				selected_job = i;
-				show_job_details = true;
-			}
+            ImGui::AlignTextToFramePadding();
+            column_width = ImGui::GetColumnWidth();
+            text_width = ImGui::CalcTextSize(ICON_FA_EYE).x;
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (column_width - text_width) * 0.5f);
+            ImGui::Text(ICON_FA_EYE);
+            if (ImGui::IsItemClicked()) {
+                selected_job = i;
+                show_job_details = true;
+            }
         }
         ImGui::EndTable();
     }
