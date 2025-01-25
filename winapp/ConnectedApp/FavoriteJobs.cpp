@@ -5,11 +5,12 @@ FavoriteJobs::FavoriteJobs(const std::string& path) : filePath(path) {
 }
 
 void FavoriteJobs::loadFavorites() {
+	// Open file for reading:
     std::ifstream file(filePath);
     if (!file) {
         return;
     }
-
+	// Parse JSON data from file:
     try {
         json j = json::parse(file);
         for (const auto& item : j.items()) {
@@ -26,16 +27,18 @@ void FavoriteJobs::loadFavorites() {
             favorites[job.id] = job;
         }
     }
+	// Handle exceptions:
     catch (const std::exception& e) {
         std::cerr << "Error loading favorites: " << e.what() << std::endl;
         favorites.clear();
     }
+	// Catch all other exceptions:
     catch (...) {
         std::cerr << "Unknown error loading favorites" << std::endl;
         favorites.clear();
     }
 }
-
+// Add job to favorites:
 bool FavoriteJobs::addJob(const Job& job) {
     if (favorites.find(job.id) != favorites.end()) {
         return false;
@@ -43,22 +46,22 @@ bool FavoriteJobs::addJob(const Job& job) {
     favorites[job.id] = job;
     return true;
 }
-
+// Remove job from favorites:
 bool FavoriteJobs::removeJob(const std::string& jobId) {
     if (favorites.erase(jobId) == 0) {
         return false;
     }
     return true;
 }
-
+// Get all favorite jobs:
 std::unordered_map<std::string, Job> FavoriteJobs::getFavorites() {
     return favorites;
 }
-
+// Check if job is in favorites:
 bool FavoriteJobs::isJobInFavorites(const std::string& jobId) const {
     return favorites.find(jobId) != favorites.end();
 }
-
+// Save favorites to file:
 void FavoriteJobs::saveFavorites() {
     std::ofstream file(filePath, std::ios::trunc);
     if (!file) {

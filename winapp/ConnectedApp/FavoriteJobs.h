@@ -32,8 +32,8 @@ class FavoriteJobs {
 private:
     std::string filePath;
     std::unordered_map<std::string, Job> favorites;
-
-    void loadFavorites();  // loads jobs from file
+    // loads jobs from file
+    void loadFavorites();  
 
 public:
     explicit FavoriteJobs(const std::string& path);

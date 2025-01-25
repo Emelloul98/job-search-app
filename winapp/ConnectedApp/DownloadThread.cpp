@@ -2,36 +2,40 @@
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "httplib.h"
 #include "nlohmann/json.hpp"
-
+// API credentials:
 std::string app_id = "40ab1a9c";
 std::string app_key = "cf73de75ea3954c26f2dabdaa9f233ef";
 // Initialize the client with the base URL
 httplib::Client cli("https://api.adzuna.com");
-//NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Recipe, name, cuisine, difficulty, cookTimeMinutes ,image)
-// Define how to parse the Jobs struct from the JSON response
 
 void DownloadThread::operator()(CommonObjects& common)
 {
     while (true) {
         {
+			// Wait for the condition variable to be notified:
             std::unique_lock<std::mutex> lock(common.mtx);
             common.cv.wait(lock, [&common]() {
-                return common.start_job_searching.load() || common.save_favorites_to_file.load();
+                return common.start_job_searching.load() || common.save_favorites_to_file.load() || common.exit_flag.load();
             });
+			// Check if the exit flag is set:
 			if (common.exit_flag) return;
-          
-            if (common.start_job_searching) {
+			// Check if the start_job_searching flag is set:
+            if (common.start_job_searching) 
+            {
                 searchJobs(common);
                 common.start_job_searching = false;
                 common.job_page_ready = true;
                 std::cout << "Full data ready" << std::endl;
-                if (common.current_page == 1) {
+				// If it's the first page, download the stats and companies data:
+                if (common.current_page == 1) 
+                {
                     downloadLastYearStats(common);
                     common.stats_data_ready = true;
                     downloadCompaniesData(common);
                     common.companies_data_ready = true;
                 }
             }
+			// Check if the save_favorites_to_file flag is set:
 			if (common.save_favorites_to_file) {
 				common.favorite_jobs.saveFavorites();
 				common.save_favorites_to_file = false;
@@ -66,14 +70,16 @@ void DownloadThread::searchJobs(CommonObjects& common)
             // Parse the raw JSON response
             nlohmann::json response = nlohmann::json::parse(res->body);
 
-            size_t total_pages = ceil(response["count"].get<int>() / 10);
-
+            double total_pages = ceil(response["count"].get<int>() / 10);
+			// Check if there are no jobs at all:
 			if (total_pages == 0) {
                 common.no_jobs_at_all = true;
 			}
+			// Check if there are more pages to load:
 			if (common.current_page < total_pages) {
 				common.show_more_jobs_button = true;
             }
+			// Check if there are no more pages to load:
             else {
 				common.show_more_jobs_button = false;
             }
@@ -236,6 +242,7 @@ std::string DownloadThread::sanitizeDescription(const std::string& desc) {
     return sanitized_desc;
 }
 
+// Format the number with commas (e.g., 1000000 -> 1,000,000):
 std::string DownloadThread::formatNumberWithCommas(int number) {
     std::stringstream ss;
     ss.imbue(std::locale(""));

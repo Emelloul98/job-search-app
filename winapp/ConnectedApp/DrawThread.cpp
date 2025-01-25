@@ -4,7 +4,6 @@
 #include <iostream>
 #include <d3d11.h>
 #include "stb_image.h"
-#include "myImages.h"
 #include <fstream>
 #include <vector>
 #include <string>
@@ -25,23 +24,31 @@ void DrawAppWindow(void* common_ptr,void* callerPtr) {
     auto draw_thread = (DrawThread*)callerPtr;
 	// image currently not working:
 	if (draw_thread->texture == nullptr) draw_thread->InitializeTextures();
+	// Render the background image:
     draw_thread->RenderBackgroundImage(common);
+	// Render the search bar:
     draw_thread->RenderSearchBar(common);
     if (common->job_page_ready) 
     {
-		/*draw_thread->current_jobs = common->jobs;*/
+		// Add the new jobs to the jobs vector:
         draw_thread->current_jobs.insert(draw_thread->current_jobs.end(), common->jobs.begin(), common->jobs.end());
 		common->job_page_ready = false;
 		draw_thread->show_jobs_list = true;
     }
+	// Display the frame pages:
     if(draw_thread->show_jobs_list)
         draw_thread->display_frame_pages(common);
-
+    // Close the application:
+    if (common->exit_flag)
+    {
+		common->cv.notify_one();
+        return;
+    }
 }
 
 void DrawThread::InitializeTextures() {
     int image_width = 0, image_height = 0;
-    //bool success = LoadTextureFromFile("C:\\Users\\mello\\cppCource\\job-search-app\\images\\image3.jpg", &texture, &image_width, &image_height);    //bool success = LoadTextureFromFile("C:\\Users\\mello\\cppCource\\job-search-app\\images\\image3.jpg", &texture, &image_width, &image_height);
+	// Load the background image with  GuiMain loadTextureFromFile function:
     bool success = LoadTextureFromFile("../../images/background.jpg", &texture, &image_width, &image_height);
     if (!success) {
         std::cerr << "Failed to load image!" << std::endl;
@@ -62,7 +69,6 @@ void DrawThread::RenderBackgroundImage(CommonObjects* common) {
 }
 
 void DrawThread:: RenderSearchBar(CommonObjects* common) {
-
     ImVec2 window_size = ImGui::GetIO().DisplaySize;
     float searchbar_width = 960.0f;
     float center_position = (window_size.x - searchbar_width) * 0.5f;
@@ -168,9 +174,11 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, button_size / 2.0f); 
 
     ImGui::SetCursorPosY(button_y); // Only adjust Y position
+	// Search button:
     if (ImGui::Button(ICON_MAGNIFYING_GLASS, ImVec2(button_size, button_size))) {
 
         if (selected_job_type != -1 && selected_days_old != -1 && selected_field != -1 && selected_location != -1) {
+			// Defualt values:
             common->job_page_ready = false;
             common->stats_data_ready = false;
             common->companies_data_ready = false;
@@ -178,7 +186,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
 			common->exit_flag = false;
 			common->show_more_jobs_button = false;
 			common->no_jobs_at_all = false;
-
+			// Set the search parameters:
             common->country = country_codes.at(locations[selected_location]);
 			common->field = fields[selected_field];
 			common->job_type = job_types[selected_job_type];
@@ -214,11 +222,8 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
         ImGui::OpenPopup("Favorite Jobs");
     }
     // Popup window
-
     ImVec2 display_size = ImGui::GetIO().DisplaySize;
-
     ImVec2 favorites_window_size = ImVec2(610, 470);
-
     ImVec2 window_pos = ImVec2(
         (display_size.x - favorites_window_size.x) * 0.5f,
         (display_size.y - favorites_window_size.y) * 0.5f
@@ -274,8 +279,10 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
 
 		std::string title = "Save Favorites";
         float center_x = ImGui::GetWindowWidth() / 2;
-        float button_width = ImGui::CalcTextSize(title.c_str()).x + 20; // 20 pixels padding
+		// Center the button:
+        float button_width = ImGui::CalcTextSize(title.c_str()).x + 20; 
         ImGui::SetCursorPosX(center_x - button_width / 2);
+		// Save favorites button:
         if (ImGui::Button(title.c_str())) {
 			common->save_favorites_to_file = true;
 			common->cv.notify_one();
@@ -298,7 +305,7 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
     // Get the current cursor position relative to the window
     ImVec2 pos = ImGui::GetCursorPos();
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
-
+    
     ImGui::PushID(label);
     float searchbar_height = 80.0f;
     float padding_top = 10.0f;
@@ -340,7 +347,7 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
     ImGui::Text("%s", preview);
     ImGui::PopStyleColor();
 
-
+	// Draw a line below the combo box:
     if (label != "Location") {
         ImGui::SameLine();
         draw_list->AddLine(
@@ -350,7 +357,7 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
             1.0f
         );
     }
-
+	// Open the popup when the button is clicked:
     if (combo_clicked) ImGui::OpenPopup(label);
     ImGui::SetNextWindowPos(ImVec2(screenPos.x, screenPos.y + 70));
 
@@ -361,9 +368,9 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
     if (popup_height > 200.0f) popup_height = 200.0f;
 
     ImGui::SetNextWindowSize(ImVec2(220.0f, popup_height));
-
+    
     if (ImGui::BeginPopup(label, ImGuiWindowFlags_NoMove)) {
-
+       
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f); 
 
         ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), false);
@@ -387,9 +394,9 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
 void DrawThread::display_frame_pages(CommonObjects* common)
 {
     ImVec2 display_size = ImGui::GetIO().DisplaySize;
-
-    ImVec2 window_size = ImVec2(950, 550); 
-
+	// Popup window size:
+    ImVec2 window_size = ImVec2(1150, 550); 
+	// Center the popup window:
     ImVec2 window_pos = ImVec2(
         (display_size.x - window_size.x) * 0.5f, 
         (display_size.y - window_size.y) * 0.5f  
@@ -400,12 +407,13 @@ void DrawThread::display_frame_pages(CommonObjects* common)
     ImGui::SetNextWindowSize(window_size);
 
     static bool first_time = true;
+	// Open the popup with 3 tabs:
 	ImGui::OpenPopup("Job Finder");
     if (ImGui::BeginPopupModal("Job Finder", &show_jobs_list)){
 
         if (ImGui::BeginTabBar("JobsTabBar", ImGuiTabBarFlags_AutoSelectNewTabs))
         {
-           
+			// Display the All Jobs tab:
             if (ImGui::BeginTabItem("All Jobs", nullptr, first_time ? ImGuiTabItemFlags_SetSelected : 0)) {
 				if (common->no_jobs_at_all) {
 					ImGui::Text("No jobs found for the selected criteria.");
@@ -416,11 +424,13 @@ void DrawThread::display_frame_pages(CommonObjects* common)
                 ImGui::EndTabItem();
                 first_time = false;
             }
+			// Display the Favorites tab:
             if (ImGui::BeginTabItem("Statistics")) {
                 if (common->stats_data_ready)
                     display_last_year_stats(*common);
                 ImGui::EndTabItem();
             }
+			// Display the Companies tab:
             if (ImGui::BeginTabItem("Companies")) {
                 if (common->companies_data_ready)
                     DrawPieChart(*common);
@@ -431,6 +441,7 @@ void DrawThread::display_frame_pages(CommonObjects* common)
         }
         ImGui::EndPopup();
     }
+	// Reset the first_time flag:
     if (!show_jobs_list) {
         first_time = true;
     }
@@ -442,12 +453,12 @@ void DrawThread::display_job_table(CommonObjects* common) {
     static int selected_job = -1;  // Track which job was clicked
     static bool show_job_details = false;       // Flag to open popup
 
-    float table_height = 440.0f;
+    float table_height = 445.0f;
     ImGui::BeginChild("TableScrollingRegion", ImVec2(0, table_height), true);
-
+	// Jobs Table initialization:
     if (ImGui::BeginTable("JobTable", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
     {
-        // Table headers
+        // Table headers:
         ImGui::TableSetupColumn("num", ImGuiTableColumnFlags_WidthFixed, 30.0f);
         ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Company", ImGuiTableColumnFlags_WidthStretch);
@@ -455,7 +466,7 @@ void DrawThread::display_job_table(CommonObjects* common) {
         ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Star", ImGuiTableColumnFlags_WidthFixed, 27.0f);
         ImGui::TableSetupColumn("View", ImGuiTableColumnFlags_WidthFixed, 35.0f);
-
+        
         ImGui::TableHeadersRow();
 
 		float column_width = 0.0f;
@@ -465,7 +476,7 @@ void DrawThread::display_job_table(CommonObjects* common) {
         {
             Job& job = current_jobs[i];
             ImGui::TableNextRow();
-            ImGui::TableNextColumn();  // Move to first column
+            ImGui::TableNextColumn();  
             ImGui::AlignTextToFramePadding();
 			ImGui::Text("%d", i + 1);
             ImGui::TableNextColumn();
@@ -483,12 +494,16 @@ void DrawThread::display_job_table(CommonObjects* common) {
 
             ImGui::TableNextColumn();
             ImGui::AlignTextToFramePadding();
+			// Create a unique ID for each star button:
             std::string star_id = "star_button_" + std::to_string(i + 1);
             bool is_clicked = DrawStar(star_id.c_str(), job.is_starred);
+			// Add the job to favorites if the star is clicked
 			if (is_clicked) {
+				// Add the job to favorites if the star is clicked:
 				if (job.is_starred) {
 					common->favorite_jobs.addJob(job);
 				}
+				// Remove the job from favorites if the star is clicked again:
 				else {
 					common->favorite_jobs.removeJob(job.id);
 				}
@@ -499,8 +514,9 @@ void DrawThread::display_job_table(CommonObjects* common) {
             text_width = ImGui::CalcTextSize(ICON_FA_EYE).x;
             ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (column_width - text_width) * 0.5f);
             ImGui::Text(ICON_FA_EYE);
+			// Open the job details popup when the view button is clicked:
             if (ImGui::IsItemClicked()) {
-                selected_job = i;
+                selected_job = static_cast<int>(i);
                 show_job_details = true;
             }
         }
@@ -548,7 +564,7 @@ void DrawThread::display_job_table(CommonObjects* common) {
 
             }
             ImGui::EndChild();
-
+            
             Job& job = current_jobs[selected_job];
             bool toRemove = common->favorite_jobs.isJobInFavorites(job.id);
 
@@ -601,9 +617,9 @@ bool DrawThread::DrawStar(const char* id, bool& is_starred)
     ImGui::InvisibleButton("star_button", ImVec2(size, size));
     bool hovered = ImGui::IsItemHovered();
     bool clicked = ImGui::IsItemClicked();
-
+	// Toggle the state when clicked:
     if (clicked)
-        is_starred = !is_starred; // Toggle the state on click
+        is_starred = !is_starred; 
 
     // Choose color: yellow for starred, white otherwise
     ImU32 color = is_starred ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
@@ -636,31 +652,35 @@ bool DrawThread::DrawStar(const char* id, bool& is_starred)
 
 bool DrawThread:: jobsButton(const char* label,float button_width)
 {
+	// Push an ID to ensure the button is unique:
 	ImGui::PushID(label);
 	ImVec2 button_size = ImVec2(button_width, 30);
 	ImVec2 p = ImGui::GetCursorScreenPos();
 	bool is_clicked = ImGui::InvisibleButton(label, button_size);
 	ImDrawList* draw_list = ImGui::GetWindowDrawList();
-
-	ImU32 color_bg    = ImGui::GetColorU32(ImVec4(0.15f, 0.15f, 0.15, 1.0f));
-    ImU32 color_hover = ImGui::GetColorU32(ImVec4(0.25f, 0.25f, 0.25, 1.0f));
+	// Style variables:
+	ImU32 color_bg    = ImGui::GetColorU32(ImVec4(0.15f, 0.15f, 0.15f, 1.0f));
+    ImU32 color_hover = ImGui::GetColorU32(ImVec4(0.25f, 0.25f, 0.25f, 1.0f));
     ImU32 color_g1    = ImGui::GetColorU32(ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
     ImU32 color_g2    = ImGui::GetColorU32(ImVec4(1.0f, 0.15f, 0.15f, 1.0f));
     ImU32 color_text  = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); 
-
+	// Draw the button:
 	draw_list->AddRectFilledMultiColor(p, ImVec2(p.x + button_size.x, p.y + button_size.y), color_g1, color_g2, color_g2, color_g1);
     if (ImGui::IsItemHovered()) draw_list->AddRectFilled(p, ImVec2(p.x + button_size.x, p.y + button_size.y), color_hover);
 	ImVec2 text_size = ImGui::CalcTextSize(label);
 	ImVec2 text_pos = ImVec2(p.x + (button_size.x - text_size.x) * 0.5f, p.y + (button_size.y - text_size.y) * 0.5f);
 	draw_list->AddText(text_pos, color_text, label);
 	ImGui::PopID();
+	// Return true if the button is clicked:
     return is_clicked;
 }
 
 void DrawThread::display_last_year_stats(CommonObjects& common) {
+	// Create a new ImPlot context:
     ImPlot::CreateContext();
     float months[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
     std::string title = "Average Salary Over 2024 in field: " + common.field;
+	// Plot the line chart:
     if (ImPlot::BeginPlot(title.c_str())) {
         ImPlot::SetupAxes("Month", "Average Salary ($)");
         ImPlot::PlotLine("Salary", months, common.salaries, 12);
@@ -670,18 +690,22 @@ void DrawThread::display_last_year_stats(CommonObjects& common) {
 
 
 void DrawThread::DrawPieChart(CommonObjects& common) {
+	// Create a new ImPlot context:
     ImPlot::CreateContext();
-    const int size = common.company_names.size();
+    const int size = static_cast<int>(common.company_names.size());
     std::vector<const char*> labels_vec;
     std::vector<float> percentages;
     float total = 0.0f;
+	// Calculate the total number of jobs:
     for (float value : common.company_values) {
         total += value;
     }
+	// Calculate the percentages:
     for (int i = 0; i < size; ++i) {
         labels_vec.push_back(common.company_names[i].c_str());
         percentages.push_back((common.company_values[i] / total) * 100.0f);
     }
+	// Set the colors for the pie chart:
     static const ImVec4 colors[] = {
         ImVec4(0.9f, 0.1f, 0.1f, 1.0f),
         ImVec4(0.1f, 0.9f, 0.1f, 1.0f),
@@ -689,12 +713,12 @@ void DrawThread::DrawPieChart(CommonObjects& common) {
         ImVec4(0.9f, 0.9f, 0.1f, 1.0f),
         ImVec4(0.9f, 0.1f, 0.9f, 1.0f)
     };
-
+	// Set the title of the pie chart:
     std::string title = "Company Jobs Distribution in: " + common.country;
     ImGui::Text(title.c_str());
 
     ImGui::BeginGroup();
-
+	// Plot the pie chart:
     ImPlotFlags plotFlags = ImPlotFlags_NoLegend;
     if (ImPlot::BeginPlot("Jobs Pie Chart", ImVec2(400, 400), plotFlags)) {
         ImPlot::PlotPieChart(labels_vec.data(), percentages.data(), size, 0.5f, 0.5f, 0.4f, "%.1f%%", 90.0f, 0);
@@ -707,7 +731,7 @@ void DrawThread::DrawPieChart(CommonObjects& common) {
     ImGui::BeginGroup();
     ImGui::Text("Legend:");
     ImGui::Dummy(ImVec2(0, 10));
-
+	// Display the color buttons and the company names:
     for (int i = 0; i < size; ++i) {
         ImGui::ColorButton(labels_vec[i], colors[i % 5], ImGuiColorEditFlags_NoTooltip, ImVec2(20, 20));
         ImGui::SameLine();
