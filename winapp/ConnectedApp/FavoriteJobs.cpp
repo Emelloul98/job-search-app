@@ -1,4 +1,6 @@
 #include "FavoriteJobs.h"
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 FavoriteJobs::FavoriteJobs(const std::string& path) : filePath(path) {
     loadFavorites();

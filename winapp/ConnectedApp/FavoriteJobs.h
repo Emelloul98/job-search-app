@@ -13,9 +13,8 @@
 #include <algorithm>
 #include <iomanip>
 #include "Job.h"
-#include <nlohmann/json.hpp>
+#include <unordered_map>
 
-using json = nlohmann::json;
 
  /**
   * @class FavoriteJobs

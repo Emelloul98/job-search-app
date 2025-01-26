@@ -8,11 +8,13 @@
 #include "FavoriteJobs.h"
 
 
+
 struct CommonObjects
 {
 	// Mutex and condition variable for thread synchronization:
 	std::mutex mtx;
 	std::condition_variable cv;
+
 	// Flags for downloadThread to wake up:
 	std::atomic_bool exit_flag = false;
 	std::atomic_bool start_job_searching = false;
@@ -39,4 +41,5 @@ struct CommonObjects
 	std::vector<float> company_values;
 	// LineChart data:
 	float salaries[12] = { 0 };
+
 };

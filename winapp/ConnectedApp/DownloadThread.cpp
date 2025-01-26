@@ -18,7 +18,13 @@ void DownloadThread::operator()(CommonObjects& common)
                 return common.start_job_searching.load() || common.save_favorites_to_file.load() || common.exit_flag.load();
             });
 			// Check if the exit flag is set:
-			if (common.exit_flag) return;
+            if (common.exit_flag) {
+                /*{
+                    std::ofstream log_file("log.txt", std::ios::app);
+                    log_file << "DownloadThread finished" << std::endl;
+                }*/
+                return;
+            }
 			// Check if the start_job_searching flag is set:
             if (common.start_job_searching) 
             {

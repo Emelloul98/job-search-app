@@ -6,9 +6,29 @@
 #include "DrawThread.h"
 #include "DownloadThread.h"
 #include <csignal>
+
+
+CommonObjects common;
+
+BOOL WINAPI ConsoleCtrlHandler(DWORD event)
+{
+    if (event == CTRL_CLOSE_EVENT) {
+      /*  {
+            std::ofstream log_file("log.txt", std::ios::app);
+            log_file << "Console closing, waiting for threads..." << std::endl;
+        }*/
+		common.exit_flag.store(true);
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        return TRUE;
+    }
+    return FALSE;
+}
+
 int main()
 {
-    CommonObjects common;
+
+    SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
+
     DrawThread draw;
 	// Create a thread to run the draw function:
     auto draw_th = std::jthread([&] {draw(common); });
@@ -16,10 +36,17 @@ int main()
 	// Create a thread to run the download function:
     auto down_th = std::jthread([&] {down(common); });
     std::cout << "running...\n";
+
+ 
 	// Wait for the threads to finish:
     down_th.join();
     draw_th.join();
-	std::cout << "done\n";
+  /*  {
+        std::ofstream log_file("log.txt", std::ios::app);
+        log_file << "after join" << std::endl;
+    }*/
+
+    return 0;
 }
 
 

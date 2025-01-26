@@ -20,6 +20,10 @@ using namespace std::chrono_literals;
 #include <vector>
 #include <ranges>
 
+//I added this code
+#include "../ConnectedApp/CommonObject.h"
+
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 // Data
@@ -217,6 +221,11 @@ int GuiMain(drawcallback drawfunction, void* obj_ptr,void* callerPtr)
     bool done = false;
     while (!done)
     {
+        auto common = static_cast<CommonObjects*>(obj_ptr);
+        if (common->exit_flag.load()) {
+            done = true;
+            break;
+        }
         // Poll and handle messages (inputs, window resize, etc.)
         // See the WndProc() function below for our to dispatch events to the Win32 backend.
         MSG msg;

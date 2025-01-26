@@ -16,7 +16,21 @@ using namespace std;
 
 void DrawThread:: operator()(CommonObjects& common) {
     GuiMain(DrawAppWindow, &common, this);
+  /*  {
+        std::ofstream log_file("log.txt", std::ios::app);
+        log_file << "DrawThread finished" << std::endl;
+    }*/
+    common.exit_flag = false;
+
+    common.save_favorites_to_file = true;
+    common.cv.notify_one();
+   /* {
+      std::ofstream log_file("log.txt", std::ios::app);
+      log_file << "save to file" << std::endl;
+    }*/
     common.exit_flag = true;
+	common.cv.notify_one();
+
 }
 
 void DrawAppWindow(void* common_ptr,void* callerPtr) {

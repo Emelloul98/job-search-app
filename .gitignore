@@ -30,3 +30,5 @@ Thumbs.db
 winapp/ConnectedApp/x64/Debug
 winapp/ConnectedApp/imgui.ini
 winapp/ImGuiLib/x64/Debug
+/x64/Debug/ImGuiLib.lib
+/winapp/ConnectedApp/favorite_jobs.json
