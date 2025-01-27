@@ -15,19 +15,13 @@ using namespace std;
 constexpr double IM_PI = 3.14159265358979323846f;
 
 void DrawThread:: operator()(CommonObjects& common) {
-    GuiMain(DrawAppWindow, &common, this);
-  /*  {
-        std::ofstream log_file("log.txt", std::ios::app);
-        log_file << "DrawThread finished" << std::endl;
-    }*/
-    common.exit_flag = false;
+    // Create a new ImPlot context:
+    ImPlot::CreateContext();
 
+    GuiMain(DrawAppWindow, &common, this);
+    common.exit_flag = false;
     common.save_favorites_to_file = true;
     common.cv.notify_one();
-   /* {
-      std::ofstream log_file("log.txt", std::ios::app);
-      log_file << "save to file" << std::endl;
-    }*/
     common.exit_flag = true;
 	common.cv.notify_one();
 
@@ -39,9 +33,9 @@ void DrawAppWindow(void* common_ptr,void* callerPtr) {
 	// image currently not working:
 	if (draw_thread->texture == nullptr) draw_thread->InitializeTextures();
 	// Render the background image:
-    draw_thread->RenderBackgroundImage(common);
+    draw_thread->RenderBackgroundImage();
 	// Render the search bar:
-    draw_thread->RenderSearchBar(common);
+    draw_thread->RenderSearchBar(*common);
     if (common->job_page_ready) 
     {
 		// Add the new jobs to the jobs vector:
@@ -51,7 +45,7 @@ void DrawAppWindow(void* common_ptr,void* callerPtr) {
     }
 	// Display the frame pages:
     if(draw_thread->show_jobs_list)
-        draw_thread->display_frame_pages(common);
+        draw_thread->display_frame_pages(*common);
     // Close the application:
     if (common->exit_flag)
     {
@@ -69,7 +63,7 @@ void DrawThread::InitializeTextures() {
     }
 }
 
-void DrawThread::RenderBackgroundImage(CommonObjects* common) const {
+void DrawThread::RenderBackgroundImage() const {
     // Get the window size
     ImVec2 window_size = ImGui::GetIO().DisplaySize;
     // Draw the background image
@@ -82,7 +76,7 @@ void DrawThread::RenderBackgroundImage(CommonObjects* common) const {
     );
 }
 
-void DrawThread:: RenderSearchBar(CommonObjects* common) {
+void DrawThread:: RenderSearchBar(CommonObjects& common) {
     ImVec2 window_size = ImGui::GetIO().DisplaySize;
     float searchbar_width = window_size.x * 0.8f;  
     float center_position = (window_size.x - searchbar_width) * 0.5f;
@@ -194,21 +188,21 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
 
         if (selected_job_type != -1 && selected_days_old != -1 && selected_field != -1 && selected_location != -1) {
 			// Defualt values:
-            common->job_page_ready = false;
-            common->stats_data_ready = false;
-            common->companies_data_ready = false;
-			common->current_page = 1;
-			common->exit_flag = false;
-			common->show_more_jobs_button = false;
-			common->no_jobs_at_all = false;
+            common.job_page_ready = false;
+            common.stats_data_ready = false;
+            common.companies_data_ready = false;
+			common.current_page = 1;
+			common.exit_flag = false;
+			common.show_more_jobs_button = false;
+			common.no_jobs_at_all = false;
 			// Set the search parameters:
-            common->country = country_codes.at(locations[selected_location]);
-			common->field = fields[selected_field];
-			common->job_type = job_types[selected_job_type];
-            common->max_days_old = max_days_old[selected_days_old];
+            common.country = country_codes.at(locations[selected_location]);
+			common.field = fields[selected_field];
+			common.job_type = job_types[selected_job_type];
+            common.max_days_old = max_days_old[selected_days_old];
 			current_jobs.clear();
-            common->start_job_searching=true;
-            common->cv.notify_one();  
+            common.start_job_searching=true;
+            common.cv.notify_one();  
           
         }
     }
@@ -248,7 +242,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     ImGui::SetNextWindowSize(favorites_window_size);
 
     if (ImGui::BeginPopupModal("Favorite Jobs", &favorite_jobs_is_open)) {
-        std::unordered_map<std::string, Job> favoriteJobs  = common->favorite_jobs.getFavorites();
+        std::unordered_map<std::string, Job> favoriteJobs  = common.favorite_jobs.getFavorites();
 
 		ImGui::BeginChild("ScrollingRegion", ImVec2(window_size.x * 0.485f, window_size.y * 0.5f), true); 
 
@@ -259,7 +253,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
             ImGui::SetCursorPosX(windowWidth - window_size.x*0.037f); 
             ImGui::PushID(job_id.c_str());
             if (ImGui::Button(ICON_TRASH_CAN)) {
-                common->favorite_jobs.removeJob(job_id);
+                common.favorite_jobs.removeJob(job_id);
 				ImGui::PopID();
                 continue;
             }
@@ -303,8 +297,8 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
 
 		// Save favorites button:
         if (ImGui::Button(title.c_str(), button_size)) {
-			common->save_favorites_to_file = true;
-			common->cv.notify_one();
+			common.save_favorites_to_file = true;
+			common.cv.notify_one();
 			favorite_jobs_is_open = false;
         }
         ImGui::EndPopup();
@@ -419,7 +413,7 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
     ImGui::PopID();
 }
 
-void DrawThread::display_frame_pages(CommonObjects* common)
+void DrawThread::display_frame_pages(CommonObjects& common)
 {
     ImVec2 window_size = ImGui::GetIO().DisplaySize;
 	// Popup window size:
@@ -443,7 +437,7 @@ void DrawThread::display_frame_pages(CommonObjects* common)
         {
 			// Display the All Jobs tab:
             if (ImGui::BeginTabItem("All Jobs", nullptr, first_time ? ImGuiTabItemFlags_SetSelected : 0)) {
-				if (common->no_jobs_at_all) {
+				if (common.no_jobs_at_all) {
 					ImGui::Text("No jobs found for the selected criteria.");
 				}
                 else {
@@ -454,14 +448,14 @@ void DrawThread::display_frame_pages(CommonObjects* common)
             }
 			// Display the Favorites tab:
             if (ImGui::BeginTabItem("Statistics")) {
-                if (common->stats_data_ready)
-                    display_last_year_stats(*common);
+                if (common.stats_data_ready)
+                    display_last_year_stats(common);
                 ImGui::EndTabItem();
             }
 			// Display the Companies tab:
             if (ImGui::BeginTabItem("Companies")) {
-                if (common->companies_data_ready)
-                    DrawPieChart(*common);
+                if (common.companies_data_ready)
+                    DrawPieChart(common);
                 ImGui::EndTabItem();
             }
 
@@ -476,7 +470,7 @@ void DrawThread::display_frame_pages(CommonObjects* common)
 
 }
 
-void DrawThread::display_job_table(CommonObjects* common) {
+void DrawThread::display_job_table(CommonObjects& common) {
 
     static int selected_job = -1;  // Track which job was clicked
     static bool show_job_details = false;       // Flag to open popup
@@ -531,11 +525,11 @@ void DrawThread::display_job_table(CommonObjects* common) {
 			if (is_clicked) {
 				// Add the job to favorites if the star is clicked:
 				if (job.is_starred) {
-					common->favorite_jobs.addJob(job);
+					common.favorite_jobs.addJob(job);
 				}
 				// Remove the job from favorites if the star is clicked again:
 				else {
-					common->favorite_jobs.removeJob(job.id);
+					common.favorite_jobs.removeJob(job.id);
 				}
 			}
             ImGui::TableNextColumn();
@@ -596,7 +590,7 @@ void DrawThread::display_job_table(CommonObjects* common) {
             ImGui::EndChild();
             
             Job& job = current_jobs[selected_job];
-            bool toRemove = common->favorite_jobs.isJobInFavorites(job.id);
+            bool toRemove = common.favorite_jobs.isJobInFavorites(job.id);
 
             float window_width = ImGui::GetWindowWidth();
             float remove_x_pos = (window_width - (button_width*1.5f) ) / 2;
@@ -606,13 +600,13 @@ void DrawThread::display_job_table(CommonObjects* common) {
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
 			if (toRemove && jobsButton("Remove from favorite", button_width*1.5f, "red")) { 
                 job.is_starred = false;
-                common->favorite_jobs.removeJob(job.id);
+                common.favorite_jobs.removeJob(job.id);
             }
             ImGui::SetCursorPosX(add_x_pos);
 
             if (!toRemove && jobsButton("Add to favorite", button_width,"orange")) {
                 job.is_starred = true;
-                common->favorite_jobs.addJob(job);
+                common.favorite_jobs.addJob(job);
             }
             ImGui::PopStyleVar();
 
@@ -625,13 +619,13 @@ void DrawThread::display_job_table(CommonObjects* common) {
     float button_x = (window_width - button_width) * 0.5f; // Center the button horizontally
     ImGui::SetCursorPosX(button_x);
 
-    if (common->show_more_jobs_button) {
+    if (common.show_more_jobs_button) {
         // Add button to load more jobs
         if (jobsButton("More Jobs", button_width, "blue"))
         {
-            common->current_page++;
-            common->start_job_searching = true;
-            common->cv.notify_one();
+            common.current_page++;
+            common.start_job_searching = true;
+            common.cv.notify_one();
         }
     }
 	ImGui::SameLine();
@@ -726,8 +720,7 @@ bool DrawThread::jobsButton(const char* label, float button_width, const std::st
 }
 
 void DrawThread::display_last_year_stats(CommonObjects& common) {
-	// Create a new ImPlot context:
-    ImPlot::CreateContext();
+	
     float months[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
     std::string title = "Average Salary Over 2024 in field: " + common.field;
 	// Plot the line chart:
@@ -740,8 +733,6 @@ void DrawThread::display_last_year_stats(CommonObjects& common) {
 
 
 void DrawThread::DrawPieChart(CommonObjects& common) {
-	// Create a new ImPlot context:
-    ImPlot::CreateContext();
     const int size = static_cast<int>(common.company_names.size());
     std::vector<const char*> labels_vec;
     std::vector<float> percentages;
@@ -790,7 +781,6 @@ void DrawThread::DrawPieChart(CommonObjects& common) {
     }
     ImGui::EndGroup();
 
-    ImPlot::DestroyContext();
 }
 
 

@@ -41,6 +41,9 @@ public:
     std::unordered_map<std::string, Job> getFavorites();
     bool isJobInFavorites(const std::string& jobId) const;
     void saveFavorites();
+    ~FavoriteJobs(){
+        favorites.clear();
+    }
 };
 
 #endif // FAVORITE_JOBS_H

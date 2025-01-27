@@ -19,10 +19,6 @@ void DownloadThread::operator()(CommonObjects& common)
             });
 			// Check if the exit flag is set:
             if (common.exit_flag) {
-                /*{
-                    std::ofstream log_file("log.txt", std::ios::app);
-                    log_file << "DownloadThread finished" << std::endl;
-                }*/
                 return;
             }
 			// Check if the start_job_searching flag is set:
@@ -67,7 +63,6 @@ void DownloadThread::searchJobs(CommonObjects& common)
     else if (common.job_type == "Part Time") {
         url += "&part_time=1";
     }
-	//std::cout << url << std::endl;
     // Send the GET request using the constructed URL
     auto res = cli.Get(url);
 
@@ -90,7 +85,6 @@ void DownloadThread::searchJobs(CommonObjects& common)
 				common.show_more_jobs_button = false;
             }
                 
-             //std::cout << response << std::endl;
             common.jobs.clear();
             // Initialize the jobs vector from the response            
             for (const auto& job_data : response["results"]) {

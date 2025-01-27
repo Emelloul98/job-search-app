@@ -13,10 +13,6 @@ CommonObjects common;
 BOOL static WINAPI ConsoleCtrlHandler(DWORD event)
 {
     if (event == CTRL_CLOSE_EVENT) {
-      /*  {
-            std::ofstream log_file("log.txt", std::ios::app);
-            log_file << "Console closing, waiting for threads..." << std::endl;
-        }*/
 		common.exit_flag.store(true);
         std::this_thread::sleep_for(std::chrono::seconds(3));
         return TRUE;
@@ -41,10 +37,6 @@ int main()
 	// Wait for the threads to finish:
     down_th.join();
     draw_th.join();
-  /*  {
-        std::ofstream log_file("log.txt", std::ios::app);
-        log_file << "after join" << std::endl;
-    }*/
 
     return 0;
 }

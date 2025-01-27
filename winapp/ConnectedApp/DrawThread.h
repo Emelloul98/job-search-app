@@ -8,12 +8,13 @@ class DrawThread
 {
 public:
     // Main functions:
+
     void operator()(CommonObjects& common);
-    void RenderSearchBar(CommonObjects* common);
-    void RenderBackgroundImage (CommonObjects* common) const;
+    void RenderSearchBar(CommonObjects& common);
+    void RenderBackgroundImage () const;
     void RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width);
-    void display_frame_pages(CommonObjects* common);
-	void display_job_table(CommonObjects* common);
+    void display_frame_pages(CommonObjects& common);
+	void display_job_table(CommonObjects& common);
     void InitializeTextures();
     // Side functions:
     bool DrawStar(const char* id, bool& is_starred);
@@ -49,5 +50,15 @@ public:
     bool starred_file_exists = false;
 	bool show_pie_chart = false;
     std::string current_tab = "All Jobs";
+
+    ~DrawThread() {
+        if (texture) {
+            texture->Release(); 
+            texture = nullptr;   
+        }
+        // Destroy the ImPlot context to avoid memory leaks:
+        ImPlot::DestroyContext();
+    }
 };
 void DrawAppWindow(void* common_ptr, void* callerPtr);
+
