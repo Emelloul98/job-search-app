@@ -10,7 +10,7 @@ public:
     // Main functions:
     void operator()(CommonObjects& common);
     void RenderSearchBar(CommonObjects* common);
-    void RenderBackgroundImage(CommonObjects* common);
+    void RenderBackgroundImage (CommonObjects* common) const;
     void RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width);
     void display_frame_pages(CommonObjects* common);
 	void display_job_table(CommonObjects* common);

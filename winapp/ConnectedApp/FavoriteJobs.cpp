@@ -69,7 +69,7 @@ void FavoriteJobs::saveFavorites() {
     if (!file) {
         throw std::runtime_error("Could not open file for writing");
     }
-    json j;
+    json j = json::object();
     for (const auto& [id, job] : favorites) {
         j[id] = {
             {"title", job.title},

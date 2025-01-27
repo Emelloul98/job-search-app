@@ -10,7 +10,7 @@
 
 CommonObjects common;
 
-BOOL WINAPI ConsoleCtrlHandler(DWORD event)
+BOOL static WINAPI ConsoleCtrlHandler(DWORD event)
 {
     if (event == CTRL_CLOSE_EVENT) {
       /*  {
@@ -37,7 +37,7 @@ int main()
     auto down_th = std::jthread([&] {down(common); });
     std::cout << "running...\n";
 
- 
+    
 	// Wait for the threads to finish:
     down_th.join();
     draw_th.join();
