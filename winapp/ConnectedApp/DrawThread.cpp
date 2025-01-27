@@ -597,13 +597,13 @@ void DrawThread::display_job_table(CommonObjects* common) {
             ImGui::SetCursorPosX(x_pos);
             
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.0f);
-            if (toRemove && jobsButton("Remove from favorite", button_width + 40)) {
+            if (toRemove && jobsButton("Remove from favorite", button_width + 45,"red")) {
                 job.is_starred = false;
                 common->favorite_jobs.removeJob(job.id);
             }
             ImGui::SetCursorPosX(x_pos + 20);
 
-            if (!toRemove && jobsButton("Add to favorite", button_width)) {
+            if (!toRemove && jobsButton("Add to favorite", button_width,"orange")) {
                 job.is_starred = true;
                 common->favorite_jobs.addJob(job);
             }
@@ -620,7 +620,7 @@ void DrawThread::display_job_table(CommonObjects* common) {
 
     if (common->show_more_jobs_button) {
         // Add button to load more jobs
-        if (jobsButton("More Jobs", button_width))
+        if (jobsButton("More Jobs", button_width, "blue"))
         {
             common->current_page++;
             common->start_job_searching = true;
@@ -674,28 +674,47 @@ bool DrawThread::DrawStar(const char* id, bool& is_starred)
 	return clicked;
 }
 
-bool DrawThread:: jobsButton(const char* label,float button_width)
-{
-	// Push an ID to ensure the button is unique:
-	ImGui::PushID(label);
-	ImVec2 button_size = ImVec2(button_width, 30);
-	ImVec2 p = ImGui::GetCursorScreenPos();
-	bool is_clicked = ImGui::InvisibleButton(label, button_size);
-	ImDrawList* draw_list = ImGui::GetWindowDrawList();
-	// Style variables:
-	ImU32 color_bg    = ImGui::GetColorU32(ImVec4(0.15f, 0.15f, 0.15f, 1.0f));
-    ImU32 color_hover = ImGui::GetColorU32(ImVec4(0.25f, 0.25f, 0.25f, 1.0f));
-    ImU32 color_g1    = ImGui::GetColorU32(ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
-    ImU32 color_g2    = ImGui::GetColorU32(ImVec4(1.0f, 0.15f, 0.15f, 1.0f));
-    ImU32 color_text  = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); 
-	// Draw the button:
-	draw_list->AddRectFilledMultiColor(p, ImVec2(p.x + button_size.x, p.y + button_size.y), color_g1, color_g2, color_g2, color_g1);
-    if (ImGui::IsItemHovered()) draw_list->AddRectFilled(p, ImVec2(p.x + button_size.x, p.y + button_size.y), color_hover);
-	ImVec2 text_size = ImGui::CalcTextSize(label);
-	ImVec2 text_pos = ImVec2(p.x + (button_size.x - text_size.x) * 0.5f, p.y + (button_size.y - text_size.y) * 0.5f);
-	draw_list->AddText(text_pos, color_text, label);
-	ImGui::PopID();
-	// Return true if the button is clicked:
+bool DrawThread::jobsButton(const char* label, float button_width, const std::string& color_scheme) {
+    // Push an ID to ensure the button is unique:
+    ImGui::PushID(label);
+    ImVec2 button_size = ImVec2(button_width, 30);
+    ImVec2 p = ImGui::GetCursorScreenPos();
+    bool is_clicked = ImGui::InvisibleButton(label, button_size);
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    ImU32 color_bg, color_hover, color_text;
+    // Default colors for the "purple" scheme:
+    if (color_scheme == "blue") {
+        /*color_bg = ImGui::GetColorU32(ImVec4(0.15f, 0.16f, 0.27f, 1.0f));*/
+        color_bg = ImGui::GetColorU32(ImVec4(0.18f, 0.23f, 0.65f, 1.0f));
+        color_hover = ImGui::GetColorU32(ImVec4(0.25f, 0.25f, 0.25f, 1.0f));
+        color_text = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+    }
+    else if (color_scheme == "orange") {
+        color_bg = ImGui::GetColorU32(ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
+        color_hover = ImGui::GetColorU32(ImVec4(1.0f, 0.6f, 0.1f, 1.0f));
+        color_text = ImGui::GetColorU32(ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+    }
+    else // Red:
+    {
+        color_bg = ImGui::GetColorU32(ImVec4(0.85f, 0.15f, 0.15f, 1.0f));
+        color_hover = ImGui::GetColorU32(ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+        color_text = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+    }
+
+    // Draw the button with rounded corners:
+    float radius = 10.0f; // Adjust the radius for rounded corners
+    draw_list->AddRectFilled(ImVec2(p.x, p.y), ImVec2(p.x + button_size.x, p.y + button_size.y), color_bg, radius);
+    if (ImGui::IsItemHovered())
+        draw_list->AddRectFilled(ImVec2(p.x, p.y), ImVec2(p.x + button_size.x, p.y + button_size.y), color_hover, radius);
+
+    // Center the text
+    ImVec2 text_size = ImGui::CalcTextSize(label);
+    ImVec2 text_pos = ImVec2(p.x + (button_size.x - text_size.x) * 0.5f, p.y + (button_size.y - text_size.y) * 0.5f);
+    draw_list->AddText(text_pos, color_text, label);
+
+    ImGui::PopID();
+
+    // Return true if the button is clicked:
     return is_clicked;
 }
 

@@ -17,7 +17,7 @@ public:
     void InitializeTextures();
     // Side functions:
     bool DrawStar(const char* id, bool& is_starred);
-    bool jobsButton(const char* label, float button_width);
+    bool jobsButton(const char* label, float button_width, const std::string& color_scheme);
     void display_last_year_stats(CommonObjects& common);
 	void DrawPieChart(CommonObjects& common);
 	// Variables:
