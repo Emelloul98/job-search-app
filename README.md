@@ -1,53 +1,74 @@
-```markdown
-# Job Search App - Setup Instructions
+# Job Search Application
 
-Follow these steps to clone the project, configure the environment, and run the project.
+## Overview
+This project is a job search application built in C++ with a user interface developed using the **imGui** library. The application utilizes the **Adzuna API** to fetch job listings and provides various functionalities to enhance the job search experience. Below, you'll find detailed descriptions of each feature along with placeholders for corresponding images.
 
-## Step 1: Clone the Project
+---
 
-First, clone the repository using the following command:
+## Technologies Used
+- **C++**: Core language for application logic.
+- **imGui**: Library for building the user interface.
+- **Adzuna API**: Source for fetching job data.
+- **imPlot**: Library for drawing histograms and pie charts.
 
-git clone https://github.com/Emelloul98/job-search-app.git
+---
+
+## Installation
+1. Clone this repository.
+2. Click on CppApp.sln
+3. Press F5 to run the application.
+---
+
+### 1. Home Page
+The home page includes a **search bar** that allows users to search for jobs based on:
+- **Country**
+- **Job field**
+- **Full-time or part-time positions**
+- **Maximum time since the job was posted**
+
+Additionally, users can click on the **Add More** button to fetch additional job listings from the API.
+
+![Home Page](https://github.com/Emelloul98/job-search-app/blob/table-component/images/Readme-images/add-more-button.png)
+
+---
+
+### 2. Job Details Popup
+By clicking the **eye icon** at the end of each job row, users can open a **popup page** displaying more details about the selected job.
+
+![Job Details Popup](https://github.com/Emelloul98/job-search-app/blob/table-component/images/Readme-images/job-details-page.png)
+
+Users can also add jobs to their favorites and remove jobs from their favorites directly from the favorites list:
+![Remove from Favorites](https://github.com/Emelloul98/job-search-app/blob/table-component/images/Readme-images/delete-from-favorites.png)
+
+---
+
+### 3. Favorite Jobs
+Users can view all their favorite jobs in one place and save them to a text file for later reference.
+![Favorites Page](https://github.com/Emelloul98/job-search-app/blob/table-component/images/Readme-images/favorite.png)
+
+---
+
+### 4. Highlighted Favorite Jobs
+Jobs marked as favorites are **visually indicated** in the job table by a **yellow star icon** next to each row.
+![Highlighted Favorites](https://github.com/Emelloul98/job-search-app/blob/table-component/images/Readme-images/favorites-star.png)
+
+---
+
+### 5. Salary Statistics
+The app provides **statistics on average salaries** in the selected country and job field for the year 2024.
+
+![Salary Statistics](https://github.com/Emelloul98/job-search-app/blob/table-component/images/Readme-images/statistics.png)
+
+---
+
+### 6. Top Companies
+Users can view information about the **top 5 companies** with the most job listings in the selected country.
+
+![Top Companies](https://github.com/Emelloul98/job-search-app/blob/table-component/images/Readme-images/pieChart.png)
+
+---
 
 
-## Step 2: Open the Solution
-
-After cloning the project, open the solution in Visual Studio:
-
-Navigate to the project directory and open the `CppApp.sln` file.
-   
-## Step 3: Set the Startup Project
-
-In Visual Studio, right-click on `connectedApp` (or your main project) in the Solution Explorer and select **Set as Startup Project**.
-
-## Step 4: Set the Environment Variable
-
-1. Right-click on the solution in the Solution Explorer and select **Properties**.
-2. In the properties window, navigate to **Configuration Properties** > **Debugging**.
-3. In the **Environment** field, click the dropdown (`...`) and add the following environment variable:
-
-   PATH=%PATH%;<ADD YOUR PATH TO THE PROJECT>\job-search-app\shared\HttpSrc\openssl\bin
-4. Click **OK** to save the environment variable.
 
 
-## Step 5: Build the Solution
-
-Build the solution to ensure everything is compiled correctly:
-
-1. Go to the **Build** menu in Visual Studio and select **Build Solution** (or press `Ctrl+Shift+B`).
-
-## Step 6: Run the Application
-
-To run the application, go to the **Debug** menu and select **Start Debugging** (or press `F5`).
-
-Your application should now be up and running.
-```
-
-### Summary:
-- **Clone the repository** with `git clone`.
-- **Open the `.sln` file** in Visual Studio.
-- **Set `connectedApp` as the startup project**.
-- **Configure the environment variable** for OpenSSL in the **Properties** section.
-- **Build the solution** using the **Build Solution** option.
-- **Run the project** using **Start Debugging**.
 
