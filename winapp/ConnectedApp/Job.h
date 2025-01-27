@@ -12,5 +12,5 @@ struct Job
 	std::string created_date;   // Date the job was posted (e.g., "2025-01-02T15:09:11Z")
 	std::string id;             // Unique job ID
 	bool is_expanded = false;   // Flag to indicate if the job details are expanded
-	bool is_starred;    // Flag to indicate if the job is starred
+	bool is_starred= false;    // Flag to indicate if the job is starred
 };

@@ -105,7 +105,8 @@ void DownloadThread::searchJobs(CommonObjects& common)
                 }
                 // Extract location (check if "location" and "area" exist)
                 if (job_data.contains("location") && job_data["location"].contains("area")) {
-                    auto area = job_data["location"]["area"];
+                    //auto area = job_data["location"]["area"];
+                    auto& area = job_data["location"]["area"];
                     std::string location_str = "";
                     for (size_t i = 0; i < area.size() - 1; ++i) {
                         location_str += area[i].get<std::string>() + ", ";
