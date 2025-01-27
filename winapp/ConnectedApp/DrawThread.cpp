@@ -137,7 +137,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     // Remove frame and round edges
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 25.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(15, 8));
+    //ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(15, 8));
 
 
     // Center the SearchBar
@@ -150,11 +150,13 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     ImGui::BeginChild("SearchBar", ImVec2(searchbar_width, searchbar_height), true,
         ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar);
 
+    ImGui::SetCursorPos(ImVec2(0, 0));
+
     ImGui::BeginGroup();
     ImGui::Columns(5, nullptr, false);
 
     float column_width = window_size.x*0.185f;
-    float button_column_width = window_size.x*0.06;  // Width for the button column
+    float button_column_width = window_size.x*0.06f;  // Width for the button column
 
     // Location Column
     ImGui::SetColumnWidth(0, column_width);
@@ -180,10 +182,10 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     // Move button inside the group, after the last column
     ImGui::NextColumn();
     ImGui::SetColumnWidth(4, button_column_width);
-    float search_icon_size = 40.0f;
+    float search_icon_size = window_size.y*0.06;
     float search_icon_pos = (searchbar_height - search_icon_size) * 0.5f;
 
-    ImGui::PopStyleVar(3);
+    ImGui::PopStyleVar(2);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, search_icon_size / 2.0f); 
 
     ImGui::SetCursorPosY(search_icon_pos); // Only adjust Y position
@@ -215,12 +217,12 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     ImGui::EndChild();
 
     // Add Favorites button below the search bar
-    const float favorites_button_width = window_size.x*0.15;  // Width of favorites button
-    const float favorites_button_height = window_size.y * 0.08;  // Height of favorites button
+    const float favorites_button_width = window_size.x*0.15f;  // Width of favorites button
+    const float favorites_button_height = window_size.y * 0.08f;  // Height of favorites button
 
      // Calculate position for centered favorites button
     float favorites_x = (window_size.x - favorites_button_width) * 0.5f;
-    float favorites_y = window_size.y * 0.85;
+    float favorites_y = window_size.y * 0.85f;
 
     static bool favorite_jobs_is_open = false;
 
@@ -234,11 +236,11 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
         ImGui::OpenPopup("Favorite Jobs");
     }
     // Popup window
-    ImVec2 display_size = ImGui::GetIO().DisplaySize;
-    ImVec2 favorites_window_size = ImVec2(610, 470); //TODO
+
+    ImVec2 favorites_window_size = ImVec2(window_size.x*0.5, window_size.y*0.6); 
     ImVec2 window_pos = ImVec2(
-        (display_size.x - favorites_window_size.x) * 0.5f,
-        (display_size.y - favorites_window_size.y) * 0.5f
+        (window_size.x - favorites_window_size.x) * 0.5f,
+        (window_size.y - favorites_window_size.y) * 0.5f
     );
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Appearing);
@@ -248,14 +250,13 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
     if (ImGui::BeginPopupModal("Favorite Jobs", &favorite_jobs_is_open)) {
         std::unordered_map<std::string, Job> favoriteJobs  = common->favorite_jobs.getFavorites();
 
-        // Add a little padding
-		ImGui::BeginChild("ScrollingRegion", ImVec2(600, 400), true); //TODO
+		ImGui::BeginChild("ScrollingRegion", ImVec2(window_size.x * 0.485, window_size.y * 0.5), true); 
 
         for (const auto& [job_id, job] : favoriteJobs) {
             ImVec2 lineStart = ImGui::GetCursorPos();
 
             float windowWidth = ImGui::GetWindowWidth();
-            ImGui::SetCursorPosX(windowWidth - 60); // 60 pixels from right edge TODO
+            ImGui::SetCursorPosX(windowWidth - window_size.x*0.037); 
             ImGui::PushID(job_id.c_str());
             if (ImGui::Button(ICON_TRASH_CAN)) {
                 common->favorite_jobs.removeJob(job_id);
@@ -292,7 +293,7 @@ void DrawThread:: RenderSearchBar(CommonObjects* common) {
 		std::string title = "Save Favorites";
         float center_x = ImGui::GetWindowWidth() / 2;
 		// Center the button:
-		float button_width = ImGui::CalcTextSize(title.c_str()).x + 20;  //TODO
+		float button_width = ImGui::CalcTextSize(title.c_str()).x + window_size.x*0.001; 
         ImGui::SetCursorPosX(center_x - button_width / 2);
 		// Save favorites button:
         if (ImGui::Button(title.c_str())) {
@@ -318,11 +319,11 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
 
     // Get the current cursor position relative to the window
     ImVec2 pos = ImGui::GetCursorPos();
+
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     
     ImGui::PushID(label);
     float searchbar_height = window_size.y*0.12;
-    float padding_top = window_size.y*0.015;
 
     // Calculate label position
     ImVec2 labelSize = ImGui::CalcTextSize(label);
@@ -331,56 +332,64 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
     const char* preview = (*selected_item >= 0) ? items[*selected_item] : "Choose...";
     ImVec2 previewSize = ImGui::CalcTextSize(preview);
     float previewOffsetX = (column_width - previewSize.x) * 0.5f;
-
+    float space_between_text = window_size.y * 0.004;
+    float text_height = previewSize.y + labelSize.y + space_between_text;
+	float text_offset_y = (searchbar_height - text_height)*0.5;
     ImGui::BeginGroup();
 
-    ImGui::SetCursorPos(pos);
+    
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.85f, 0.85f, 0.85f, 0.5f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.75f, 0.75f, 0.75f, 0.5f));
-
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 30.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 
-	bool combo_clicked = ImGui::Button("##combo", ImVec2(column_width - 10, 65.0f)); //TODO
+	float combo_x_offset = window_size.x * 0.007;
+    float combo_y_offset = window_size.y * 0.013;
+	float combo_height = searchbar_height - (combo_y_offset * 2);
+	float combo_width = column_width - (combo_x_offset * 2);
+    ImGui::SetCursorPos(ImVec2(pos.x + combo_x_offset, combo_y_offset));
 
-    ImGui::PopStyleVar(2);
+	bool combo_clicked = ImGui::Button("##combo", ImVec2(combo_width, combo_height));
+
+    ImGui::PopStyleVar();
     ImGui::PopStyleColor(3);
 
     // Set relative position for the label
-    ImGui::SetCursorPos(ImVec2(pos.x + labelOffsetX, pos.y + padding_top));
+    ImGui::SetCursorPos(ImVec2(pos.x + labelOffsetX, pos.y + text_offset_y));
 
     // Add some contrast to make the text visible
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
     ImGui::Text("%s", label);
     ImGui::PopStyleColor();
 
-    ImGui::SetCursorPos(ImVec2(pos.x + previewOffsetX, pos.y + padding_top + labelSize.y + (0.01*window_size.y)));
+    ImGui::SetCursorPos(ImVec2(pos.x + previewOffsetX, pos.y + text_offset_y + labelSize.y + space_between_text));
 
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
     ImGui::Text("%s", preview);
     ImGui::PopStyleColor();
 	// Draw a line below the combo box:
+	float line_height = searchbar_height*0.7;
+	float line_y_offset = (searchbar_height - line_height) * 0.5;
     if (label != "Location") {
         ImGui::SameLine();
         draw_list->AddLine(
-            ImVec2(screenPos.x - (window_size.x * 0.004), screenPos.y + (window_size.y*0.008)),
-            ImVec2(screenPos.x - (window_size.x * 0.004), screenPos.y + searchbar_height - (2*padding_top)),
+            ImVec2(screenPos.x, screenPos.y + line_y_offset),
+            ImVec2(screenPos.x, screenPos.y + line_y_offset + line_height),
             IM_COL32(211, 211, 211, 255),
             1.0f
         );
     }
 	// Open the popup when the button is clicked:
     if (combo_clicked) ImGui::OpenPopup(label);
-    ImGui::SetNextWindowPos(ImVec2(screenPos.x, screenPos.y + searchbar_height - padding_top));
+    ImGui::SetNextWindowPos(ImVec2(screenPos.x + combo_x_offset, screenPos.y + searchbar_height ));
 
     // Calculate the height needed for all items
     float item_height = ImGui::GetTextLineHeightWithSpacing();
     float content_height = item_height * items_count;
     float popup_height = content_height + ImGui::GetStyle().WindowPadding.y * 2;
-    if (popup_height > 200.0f) popup_height = 200.0f;
+    if (popup_height > window_size.y*0.3) popup_height = window_size.y * 0.3;
 
-    ImGui::SetNextWindowSize(ImVec2(column_width - (window_size.x*0.006), popup_height));
+    ImGui::SetNextWindowSize(ImVec2(combo_width, popup_height));
     
     if (ImGui::BeginPopup(label, ImGuiWindowFlags_NoMove)) {
        
@@ -406,18 +415,18 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
 
 void DrawThread::display_frame_pages(CommonObjects* common)
 {
-    ImVec2 display_size = ImGui::GetIO().DisplaySize;
+    ImVec2 window_size = ImGui::GetIO().DisplaySize;
 	// Popup window size:
-    ImVec2 window_size = ImVec2(1150, 550); 
+    ImVec2 job_finder_window_size = ImVec2(window_size.x*0.8, window_size.y*0.74);
 	// Center the popup window:
     ImVec2 window_pos = ImVec2(
-        (display_size.x - window_size.x) * 0.5f, 
-        (display_size.y - window_size.y) * 0.5f  
+        (window_size.x - job_finder_window_size.x) * 0.5f,
+        (window_size.y - job_finder_window_size.y) * 0.5f
     );
 
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Appearing);
     // Set fixed size for popup
-    ImGui::SetNextWindowSize(window_size);
+    ImGui::SetNextWindowSize(job_finder_window_size);
 
     static bool first_time = true;
 	// Open the popup with 3 tabs:
@@ -465,20 +474,22 @@ void DrawThread::display_job_table(CommonObjects* common) {
 
     static int selected_job = -1;  // Track which job was clicked
     static bool show_job_details = false;       // Flag to open popup
+    ImVec2 window_size = ImGui::GetIO().DisplaySize;
 
-    float table_height = 445.0f;
+
+    float table_height = window_size.y*0.59;
     ImGui::BeginChild("TableScrollingRegion", ImVec2(0, table_height), true);
 	// Jobs Table initialization:
     if (ImGui::BeginTable("JobTable", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
     {
         // Table headers:
-        ImGui::TableSetupColumn("num", ImGuiTableColumnFlags_WidthFixed, 30.0f);
+        ImGui::TableSetupColumn("num", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Title", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Company", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Location", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableSetupColumn("Salary", ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("Star", ImGuiTableColumnFlags_WidthFixed, 27.0f);
-        ImGui::TableSetupColumn("View", ImGuiTableColumnFlags_WidthFixed, 35.0f);
+        ImGui::TableSetupColumn("Star", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("View", ImGuiTableColumnFlags_WidthStretch);
         
         ImGui::TableHeadersRow();
 
