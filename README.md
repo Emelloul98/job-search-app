@@ -64,7 +64,7 @@ The app provides **statistics on average salaries** in the selected country and 
 ### 6. Top Companies
 Users can view information about the **top 5 companies** with the most job listings in the selected country.
 
-![Top Companies](https://github.com/Emelloul98/job-search-app/blob/table-component/images/Readme-images/pieChart.png)
+![Top Companies](https://github.com/Emelloul98/job-search-app/blob/table-component/images/Readme-images/pie-chart.png)
 
 ---
 
