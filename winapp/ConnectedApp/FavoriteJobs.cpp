@@ -2,13 +2,13 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
-FavoriteJobs::FavoriteJobs(const std::string& path) : filePath(path) {
+FavoriteJobs::FavoriteJobs(const std::string& fileName) : file_name(fileName) {
     loadFavorites();
 }
 
 void FavoriteJobs::loadFavorites() {
 	// Open file for reading:
-    std::ifstream file(filePath);
+    std::ifstream file(file_name);
     if (!file) {
         return;
     }
@@ -65,7 +65,7 @@ bool FavoriteJobs::isJobInFavorites(const std::string& jobId) const {
 }
 // Save favorites to file:
 void FavoriteJobs::saveFavorites() {
-    std::ofstream file(filePath, std::ios::trunc);
+    std::ofstream file(file_name, std::ios::trunc);
     if (!file) {
         throw std::runtime_error("Could not open file for writing");
     }

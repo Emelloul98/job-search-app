@@ -5,14 +5,14 @@
         {
             "primary-output": "x64\\Release\\Job.h.obj",
             "outputs": [
-                "C:\\Users\\mello\\cppCource\\job-search-app\\winapp\\ConnectedApp\\x64\\Release\\vc143.pdb",
+                "C:\\Users\\HavaH\\Desktop\\fourthYear\\job-search-app\\winapp\\ConnectedApp\\x64\\Release\\vc143.pdb",
                 "x64\\Release\\",
-                "C:\\Users\\mello\\cppCource\\job-search-app\\winapp\\ConnectedApp\\x64\\Release\\Job.h.ifc"
+                "C:\\Users\\HavaH\\Desktop\\fourthYear\\job-search-app\\winapp\\ConnectedApp\\x64\\Release\\Job.h.ifc"
             ],
             "provides": [
                 {
                     "logical-name": "Job.h",
-                    "source-path": "c:\\users\\mello\\cppcource\\job-search-app\\winapp\\connectedapp\\job.h",
+                    "source-path": "c:\\users\\havah\\desktop\\fourthyear\\job-search-app\\winapp\\connectedapp\\job.h",
                     "lookup-method": "absolute"
                 }
             ],

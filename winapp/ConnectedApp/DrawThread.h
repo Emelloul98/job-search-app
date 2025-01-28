@@ -8,7 +8,6 @@ class DrawThread
 {
 public:
     // Main functions:
-
     void operator()(CommonObjects& common);
     void RenderSearchBar(CommonObjects& common);
     void RenderBackgroundImage () const;
@@ -56,8 +55,6 @@ public:
             texture->Release(); 
             texture = nullptr;   
         }
-        // Destroy the ImPlot context to avoid memory leaks:
-        ImPlot::DestroyContext();
     }
 };
 void DrawAppWindow(void* common_ptr, void* callerPtr);

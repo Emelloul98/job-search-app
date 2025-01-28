@@ -15,9 +15,7 @@ using namespace std;
 constexpr double IM_PI = 3.14159265358979323846f;
 
 void DrawThread:: operator()(CommonObjects& common) {
-    // Create a new ImPlot context:
-    ImPlot::CreateContext();
-
+ 
     GuiMain(DrawAppWindow, &common, this);
     common.exit_flag = false;
     common.save_favorites_to_file = true;
@@ -28,6 +26,7 @@ void DrawThread:: operator()(CommonObjects& common) {
 }
 
 void DrawAppWindow(void* common_ptr,void* callerPtr) {
+
     auto common = static_cast<CommonObjects*>(common_ptr);
     auto draw_thread = (DrawThread*)callerPtr;
 	// image currently not working:
@@ -52,6 +51,7 @@ void DrawAppWindow(void* common_ptr,void* callerPtr) {
 		common->cv.notify_one();
         return;
     }
+
 }
 
 void DrawThread::InitializeTextures() {
@@ -720,7 +720,7 @@ bool DrawThread::jobsButton(const char* label, float button_width, const std::st
 }
 
 void DrawThread::display_last_year_stats(CommonObjects& common) {
-	
+    ImPlot::CreateContext();
     float months[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
     std::string title = "Average Salary Over 2024 in field: " + common.field;
 	// Plot the line chart:
@@ -729,61 +729,64 @@ void DrawThread::display_last_year_stats(CommonObjects& common) {
         ImPlot::PlotLine("Salary", months, common.salaries, 12);
         ImPlot::EndPlot();
     }
+
 }
 
 
+
 void DrawThread::DrawPieChart(CommonObjects& common) {
+    ImPlot::CreateContext();
     const int size = static_cast<int>(common.company_names.size());
     std::vector<const char*> labels_vec;
     std::vector<float> percentages;
     float total = 0.0f;
-	// Calculate the total number of jobs:
+
+    // Calculate the total number of jobs:
     for (float value : common.company_values) {
         total += value;
     }
-	// Calculate the percentages:
+
+    // Calculate the percentages:
     for (int i = 0; i < size; ++i) {
         labels_vec.push_back(common.company_names[i].c_str());
         percentages.push_back((common.company_values[i] / total) * 100.0f);
     }
-	// Set the colors for the pie chart:
-    static const ImVec4 colors[] = {
-        ImVec4(0.9f, 0.1f, 0.1f, 1.0f),
-        ImVec4(0.1f, 0.9f, 0.1f, 1.0f),
-        ImVec4(0.1f, 0.1f, 0.9f, 1.0f),
-        ImVec4(0.9f, 0.9f, 0.1f, 1.0f),
-        ImVec4(0.9f, 0.1f, 0.9f, 1.0f)
-    };
-	// Set the title of the pie chart:
+
+    // Set the title of the pie chart:
     std::string title = "Company Jobs Distribution in: " + common.country;
     ImGui::Text(title.c_str());
 
     ImGui::BeginGroup();
-	// Plot the pie chart:
+
+    // Plot the pie chart:
     ImPlotFlags plotFlags = ImPlotFlags_NoLegend;
     if (ImPlot::BeginPlot("Jobs Pie Chart", ImVec2(400, 400), plotFlags)) {
         ImPlot::PlotPieChart(labels_vec.data(), percentages.data(), size, 0.5f, 0.5f, 0.4f, "%.1f%%", 90.0f, 0);
         ImPlot::EndPlot();
     }
+
     ImGui::EndGroup();
 
-    ImGui::SameLine(450); 
+    ImGui::SameLine(450);
 
     ImGui::BeginGroup();
     ImGui::Text("Legend:");
     ImGui::Dummy(ImVec2(0, 10));
-	// Display the color buttons and the company names:
+
+    // Generate the legend automatically based on ImPlot colors:
     for (int i = 0; i < size; ++i) {
-        ImGui::ColorButton(labels_vec[i], colors[i % 5], ImGuiColorEditFlags_NoTooltip, ImVec2(20, 20));
+        // Automatically uses ImPlot's color for the legend
+        ImVec4 color = ImPlot::GetColormapColor(i);  // Retrieve the color ImPlot assigns
+        ImGui::ColorButton(labels_vec[i], color, ImGuiColorEditFlags_NoTooltip, ImVec2(20, 20));
         ImGui::SameLine();
         ImGui::Text("%s: %.0f jobs (%.1f%%)", labels_vec[i], common.company_values[i], percentages[i]);
-        ImGui::Dummy(ImVec2(0, 5)); 
+        ImGui::Dummy(ImVec2(0, 5));
     }
+
     ImGui::EndGroup();
+	ImPlot::DestroyContext();
 
 }
-
-
 
 
 

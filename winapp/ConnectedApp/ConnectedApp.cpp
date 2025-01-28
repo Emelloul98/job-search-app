@@ -24,7 +24,6 @@ int main()
 {
 
     SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
-
     DrawThread draw;
 	// Create a thread to run the draw function:
     auto draw_th = std::jthread([&] {draw(common); });
