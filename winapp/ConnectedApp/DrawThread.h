@@ -55,6 +55,7 @@ public:
             texture->Release(); 
             texture = nullptr;   
         }
+        ImPlot::DestroyContext();
     }
 };
 void DrawAppWindow(void* common_ptr, void* callerPtr);

@@ -15,14 +15,14 @@ using namespace std;
 constexpr double IM_PI = 3.14159265358979323846f;
 
 void DrawThread:: operator()(CommonObjects& common) {
- 
+    ImPlot::CreateContext();
     GuiMain(DrawAppWindow, &common, this);
     common.exit_flag = false;
     common.save_favorites_to_file = true;
     common.cv.notify_one();
     common.exit_flag = true;
 	common.cv.notify_one();
-
+	return;
 }
 
 void DrawAppWindow(void* common_ptr,void* callerPtr) {
@@ -31,6 +31,7 @@ void DrawAppWindow(void* common_ptr,void* callerPtr) {
     auto draw_thread = (DrawThread*)callerPtr;
 	// image currently not working:
 	if (draw_thread->texture == nullptr) draw_thread->InitializeTextures();
+
 	// Render the background image:
     draw_thread->RenderBackgroundImage();
 	// Render the search bar:
@@ -45,12 +46,6 @@ void DrawAppWindow(void* common_ptr,void* callerPtr) {
 	// Display the frame pages:
     if(draw_thread->show_jobs_list)
         draw_thread->display_frame_pages(*common);
-    // Close the application:
-    if (common->exit_flag)
-    {
-		common->cv.notify_one();
-        return;
-    }
 
 }
 
@@ -77,15 +72,16 @@ void DrawThread::RenderBackgroundImage() const {
 }
 
 void DrawThread:: RenderSearchBar(CommonObjects& common) {
+
     ImVec2 window_size = ImGui::GetIO().DisplaySize;
     float searchbar_width = window_size.x * 0.8f;  
     float center_position = (window_size.x - searchbar_width) * 0.5f;
     float searchbar_y_pos = window_size.y * 0.4f; 
 	float searchbar_height = window_size.y * 0.12f;  
 
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::SetNextWindowSize(window_size);
-    ImGui::Begin("SearchBarOverlay", nullptr,
+	ImGui::SetNextWindowPos(ImVec2(0, 0)); // Set the window position to the top-left corner
+	ImGui::SetNextWindowSize(window_size); // Set the window size to the full window size
+	ImGui::Begin("SearchBarOverlay", nullptr, // No title, no border
         ImGuiWindowFlags_NoDecoration |
         ImGuiWindowFlags_NoBackground |
         ImGuiWindowFlags_NoMove |
@@ -131,23 +127,21 @@ void DrawThread:: RenderSearchBar(CommonObjects& common) {
     // Remove frame and round edges
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 25.0f);
-    //ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(15, 8));
 
 
     // Center the SearchBar
-    
     ImGui::SetCursorPosX(center_position);
     ImGui::SetCursorPosY(searchbar_y_pos); 
 
 
     // Begin main container
     ImGui::BeginChild("SearchBar", ImVec2(searchbar_width, searchbar_height), true,
-        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar);
+		ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar); // No border, no scrollbars
 
-    ImGui::SetCursorPos(ImVec2(0, 0));
+	ImGui::SetCursorPos(ImVec2(0, 0)); // Set the cursor position to the top-left corner of the child window
 
     ImGui::BeginGroup();
-    ImGui::Columns(5, nullptr, false);
+	ImGui::Columns(5, nullptr, false); // 5 columns
 
     float column_width = window_size.x*0.185f;
     float button_column_width = window_size.x*0.06f;  // Width for the button column
@@ -156,22 +150,20 @@ void DrawThread:: RenderSearchBar(CommonObjects& common) {
     ImGui::SetColumnWidth(0, column_width);
     RenderCustomComboBox("Location", locations, IM_ARRAYSIZE(locations), &selected_location, column_width);
 
-    // Job Type Column
-    ImGui::NextColumn();
-    ImGui::SetColumnWidth(1, column_width);
-  
-    RenderCustomComboBox("Field", fields, IM_ARRAYSIZE(fields), &selected_field, column_width);
-
     // Field Column
     ImGui::NextColumn();
+    ImGui::SetColumnWidth(1, column_width);
+    RenderCustomComboBox("Field", fields, IM_ARRAYSIZE(fields), &selected_field, column_width);
 
+    // Job Type Column
+    ImGui::NextColumn();
     ImGui::SetColumnWidth(2, column_width);
     RenderCustomComboBox("Job Type", job_types, IM_ARRAYSIZE(job_types), &selected_job_type, column_width);
 
-    // Role Column
+    //Maximum days old Column
     ImGui::NextColumn();
     ImGui::SetColumnWidth(3, column_width);
-    RenderCustomComboBox("Maximum days old", max_days_old, IM_ARRAYSIZE(max_days_old), &selected_days_old, column_width);
+    RenderCustomComboBox("Max days old", max_days_old, IM_ARRAYSIZE(max_days_old), &selected_days_old, column_width);
 
     // Move button inside the group, after the last column
     ImGui::NextColumn();
@@ -187,7 +179,7 @@ void DrawThread:: RenderSearchBar(CommonObjects& common) {
     if (ImGui::Button(ICON_MAGNIFYING_GLASS, ImVec2(search_icon_size, search_icon_size))) {
 
         if (selected_job_type != -1 && selected_days_old != -1 && selected_field != -1 && selected_location != -1) {
-			// Defualt values:
+			// reset the flags:
             common.job_page_ready = false;
             common.stats_data_ready = false;
             common.companies_data_ready = false;
@@ -202,7 +194,7 @@ void DrawThread:: RenderSearchBar(CommonObjects& common) {
             common.max_days_old = max_days_old[selected_days_old];
 			current_jobs.clear();
             common.start_job_searching=true;
-            common.cv.notify_one();  
+			common.cv.notify_one();  // Notify the download thread to start searching for jobs
           
         }
     }
@@ -236,8 +228,9 @@ void DrawThread:: RenderSearchBar(CommonObjects& common) {
         (window_size.x - favorites_window_size.x) * 0.5f,
         (window_size.y - favorites_window_size.y) * 0.5f
     );
-
-    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Appearing);
+    
+    //ImGuiCond_Appearing apply settings or actions when a window or UI element first appears on screen or reappears after being hidden
+	ImGui::SetNextWindowPos(window_pos, ImGuiCond_Appearing); 
     // Set fixed size for popup
     ImGui::SetNextWindowSize(favorites_window_size);
 
@@ -337,7 +330,7 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
 	float text_offset_y = (searchbar_height - text_height)*0.5f;
     ImGui::BeginGroup();
 
-    
+	// Set the style for the combo box
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.85f, 0.85f, 0.85f, 0.5f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.75f, 0.75f, 0.75f, 0.5f));
@@ -370,6 +363,8 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
 	// Draw a line below the combo box:
 	float line_height = searchbar_height*0.7f;
 	float line_y_offset = (searchbar_height - line_height) * 0.5f;
+
+	// Draw a line between the combo boxes 
     if (label != "Location") {
         ImGui::SameLine();
         draw_list->AddLine(
@@ -386,19 +381,19 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
     // Calculate the height needed for all items
     float item_height = ImGui::GetTextLineHeightWithSpacing();
     float content_height = item_height * items_count;
-    float popup_height = content_height + ImGui::GetStyle().WindowPadding.y * 2;
-    if (popup_height > window_size.y*0.3) popup_height = window_size.y * 0.3f;
+	float popup_height = content_height + ImGui::GetStyle().WindowPadding.y * 2; // Add padding
+	if (popup_height > window_size.y * 0.3) popup_height = window_size.y * 0.3f; // Limit the height of the popup
 
     ImGui::SetNextWindowSize(ImVec2(combo_width, popup_height));
     
     if (ImGui::BeginPopup(label, ImGuiWindowFlags_NoMove)) {
        
-        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f); 
+		ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f); // No rounding
 
         ImGui::BeginChild("ScrollingRegion", ImVec2(0, 0), false);
 
         for (int i = 0; i < items_count; i++) {
-            if (ImGui::Selectable(items[i], i == *selected_item)) {
+            if (ImGui::Selectable(items[i], i == *selected_item)) { // This is the condition for selecting the item
                 *selected_item = i;
                 ImGui::CloseCurrentPopup(); // Close popup when item is selected
             }
@@ -428,7 +423,7 @@ void DrawThread::display_frame_pages(CommonObjects& common)
     // Set fixed size for popup
     ImGui::SetNextWindowSize(job_finder_window_size);
 
-    static bool first_time = true;
+	static bool first_time = true; // Flag to set the first tab as selected
 	// Open the popup with 3 tabs:
 	ImGui::OpenPopup("Job Finder");
     if (ImGui::BeginPopupModal("Job Finder", &show_jobs_list)){
@@ -590,7 +585,7 @@ void DrawThread::display_job_table(CommonObjects& common) {
             ImGui::EndChild();
             
             Job& job = current_jobs[selected_job];
-            bool toRemove = common.favorite_jobs.isJobInFavorites(job.id);
+            bool toRemove = job.is_starred;
 
             float window_width = ImGui::GetWindowWidth();
             float remove_x_pos = (window_width - (button_width*1.5f) ) / 2;
@@ -685,7 +680,6 @@ bool DrawThread::jobsButton(const char* label, float button_width, const std::st
     ImU32 color_bg, color_hover, color_text;
     // Default colors for the "purple" scheme:
     if (color_scheme == "blue") {
-        /*color_bg = ImGui::GetColorU32(ImVec4(0.15f, 0.16f, 0.27f, 1.0f));*/
         color_bg = ImGui::GetColorU32(ImVec4(0.18f, 0.23f, 0.65f, 1.0f));
         color_hover = ImGui::GetColorU32(ImVec4(0.25f, 0.25f, 0.25f, 1.0f));
         color_text = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -720,10 +714,10 @@ bool DrawThread::jobsButton(const char* label, float button_width, const std::st
 }
 
 void DrawThread::display_last_year_stats(CommonObjects& common) {
-    ImPlot::CreateContext();
     float months[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
     std::string title = "Average Salary Over 2024 in field: " + common.field;
-	// Plot the line chart:
+   
+    // Plot the line chart:
     if (ImPlot::BeginPlot(title.c_str())) {
         ImPlot::SetupAxes("Month", "Average Salary ($)");
         ImPlot::PlotLine("Salary", months, common.salaries, 12);
@@ -735,7 +729,7 @@ void DrawThread::display_last_year_stats(CommonObjects& common) {
 
 
 void DrawThread::DrawPieChart(CommonObjects& common) {
-    ImPlot::CreateContext();
+    float window_width = ImGui::GetWindowSize().x;
     const int size = static_cast<int>(common.company_names.size());
     std::vector<const char*> labels_vec;
     std::vector<float> percentages;
@@ -754,38 +748,22 @@ void DrawThread::DrawPieChart(CommonObjects& common) {
 
     // Set the title of the pie chart:
     std::string title = "Company Jobs Distribution in: " + common.country;
+    float text_width = ImGui::CalcTextSize(title.c_str()).x;
+    ImGui::SetCursorPosX((window_width - text_width)/2);
+
     ImGui::Text(title.c_str());
 
     ImGui::BeginGroup();
 
+    ImGui::SetCursorPosX((window_width - 800) / 2);
     // Plot the pie chart:
-    ImPlotFlags plotFlags = ImPlotFlags_NoLegend;
-    if (ImPlot::BeginPlot("Jobs Pie Chart", ImVec2(400, 400), plotFlags)) {
-        ImPlot::PlotPieChart(labels_vec.data(), percentages.data(), size, 0.5f, 0.5f, 0.4f, "%.1f%%", 90.0f, 0);
+    if (ImPlot::BeginPlot("Jobs Pie Chart", ImVec2(800, 400))) {
+        ImPlot::SetupAxisLimits(ImAxis_X1, 0, 1);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
+        ImPlot::PlotPieChart(labels_vec.data(), percentages.data(), size, 0.6f, 0.5f, 0.3f, "%.1f%%", 90.0f, 0);
         ImPlot::EndPlot();
     }
-
     ImGui::EndGroup();
-
-    ImGui::SameLine(450);
-
-    ImGui::BeginGroup();
-    ImGui::Text("Legend:");
-    ImGui::Dummy(ImVec2(0, 10));
-
-    // Generate the legend automatically based on ImPlot colors:
-    for (int i = 0; i < size; ++i) {
-        // Automatically uses ImPlot's color for the legend
-        ImVec4 color = ImPlot::GetColormapColor(i);  // Retrieve the color ImPlot assigns
-        ImGui::ColorButton(labels_vec[i], color, ImGuiColorEditFlags_NoTooltip, ImVec2(20, 20));
-        ImGui::SameLine();
-        ImGui::Text("%s: %.0f jobs (%.1f%%)", labels_vec[i], common.company_values[i], percentages[i]);
-        ImGui::Dummy(ImVec2(0, 5));
-    }
-
-    ImGui::EndGroup();
-	ImPlot::DestroyContext();
-
 }
 
 

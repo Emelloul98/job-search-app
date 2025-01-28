@@ -17,6 +17,11 @@ void DownloadThread::operator()(CommonObjects& common)
             common.cv.wait(lock, [&common]() {
                 return common.start_job_searching.load() || common.save_favorites_to_file.load() || common.exit_flag.load();
             });
+            // Check if the save_favorites_to_file flag is set:
+            if (common.save_favorites_to_file) {
+                common.favorite_jobs.saveFavorites();
+                common.save_favorites_to_file = false;
+            }
 			// Check if the exit flag is set:
             if (common.exit_flag) {
                 return;
@@ -27,7 +32,6 @@ void DownloadThread::operator()(CommonObjects& common)
                 searchJobs(common);
                 common.start_job_searching = false;
                 common.job_page_ready = true;
-                std::cout << "Full data ready" << std::endl;
 				// If it's the first page, download the stats and companies data:
                 if (common.current_page == 1) 
                 {
@@ -37,11 +41,7 @@ void DownloadThread::operator()(CommonObjects& common)
                     common.companies_data_ready = true;
                 }
             }
-			// Check if the save_favorites_to_file flag is set:
-			if (common.save_favorites_to_file) {
-				common.favorite_jobs.saveFavorites();
-				common.save_favorites_to_file = false;
-			}
+			
         }
     }
 }
