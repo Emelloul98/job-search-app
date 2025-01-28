@@ -15,7 +15,7 @@ void DownloadThread::operator()(CommonObjects& common)
 			// Wait for the condition variable to be notified:
             std::unique_lock<std::mutex> lock(common.mtx);
             common.cv.wait(lock, [&common]() {
-                return common.start_job_searching.load() || common.save_favorites_to_file.load() || common.exit_flag.load();
+                return common.start_job_searching.load() || common.save_favorites_to_file.load();
             });
             // Check if the save_favorites_to_file flag is set:
             if (common.save_favorites_to_file) {

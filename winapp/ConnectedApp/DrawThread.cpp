@@ -15,13 +15,12 @@ using namespace std;
 constexpr double IM_PI = 3.14159265358979323846f;
 
 void DrawThread:: operator()(CommonObjects& common) {
-    ImPlot::CreateContext();
+	ImPlot::CreateContext(); // Create the ImPlot context once
     GuiMain(DrawAppWindow, &common, this);
-    common.exit_flag = false;
+    common.exit_flag = true;
     common.save_favorites_to_file = true;
     common.cv.notify_one();
-    common.exit_flag = true;
-	common.cv.notify_one();
+
 	return;
 }
 
@@ -716,9 +715,15 @@ bool DrawThread::jobsButton(const char* label, float button_width, const std::st
 void DrawThread::display_last_year_stats(CommonObjects& common) {
     float months[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
     std::string title = "Average Salary Over 2024 in field: " + common.field;
-   
+
+	float window_width = ImGui::GetWindowSize().x;
+	float window_height = ImGui::GetWindowSize().y;
+    float graph_width = window_width * 0.8f;
+	float graph_height = window_height * 0.6f;
+    ImGui::SetCursorPos(ImVec2((window_width- graph_width)/2, (window_height - graph_height) / 2));
+
     // Plot the line chart:
-    if (ImPlot::BeginPlot(title.c_str())) {
+    if (ImPlot::BeginPlot(title.c_str(), ImVec2(graph_width, graph_height))) {
         ImPlot::SetupAxes("Month", "Average Salary ($)");
         ImPlot::PlotLine("Salary", months, common.salaries, 12);
         ImPlot::EndPlot();
