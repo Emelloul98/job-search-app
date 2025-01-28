@@ -2,18 +2,28 @@
 #include "CommonObject.h"
 #include <d3d11.h>
 #include "../../shared/ImGuiSrc/imgui.h"
+#include "implot.h"
+
 class DrawThread
 {
 public:
+    // Main functions:
+
     void operator()(CommonObjects& common);
-    void RenderSearchBar(CommonObjects* common);
-    void RenderBackgroundImage(CommonObjects* common);
+    void RenderSearchBar(CommonObjects& common);
+    void RenderBackgroundImage () const;
     void RenderCustomComboBox(const char* label, const char* items[], size_t items_count, int* selected_item, float column_width);
-    void display_jobs(CommonObjects* common);
-    ID3D11ShaderResourceView* CreateTextureFromImage(const unsigned char* image_data, int width, int height, int channels);
-    void DrawStar(ImDrawList* draw_list, ImVec2 center, float radius, ImU32 color, bool filled); 
-    bool StarButton(const char* id, bool& is_starred);
-    std::vector<Jobs> current_jobs;
+    void display_frame_pages(CommonObjects& common);
+	void display_job_table(CommonObjects& common);
+    void InitializeTextures();
+    // Side functions:
+    bool DrawStar(const char* id, bool& is_starred);
+    bool jobsButton(const char* label, float button_width, const std::string& color_scheme);
+    void display_last_year_stats(CommonObjects& common);
+	void DrawPieChart(CommonObjects& common);
+	// Variables:
+    ID3D11ShaderResourceView* texture = nullptr;  
+    std::vector<Job> current_jobs;
     const std::unordered_map<std::string, std::string> country_codes = {
             {"United Kingdom", "gb"},
             {"United States", "us"},
@@ -36,5 +46,19 @@ public:
             {"South Africa", "za"}
     };
     bool show_jobs_list = false;
+    bool show_last_year_stats = false;
+    bool starred_file_exists = false;
+	bool show_pie_chart = false;
+    std::string current_tab = "All Jobs";
+
+    ~DrawThread() {
+        if (texture) {
+            texture->Release(); 
+            texture = nullptr;   
+        }
+        // Destroy the ImPlot context to avoid memory leaks:
+        ImPlot::DestroyContext();
+    }
 };
 void DrawAppWindow(void* common_ptr, void* callerPtr);
+

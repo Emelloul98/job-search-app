@@ -24,6 +24,12 @@
     <ClCompile Include="DrawThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FavoriteJobs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Job.h">
+      <Filter>Header Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DownloadThread.h">
@@ -35,7 +41,7 @@
     <ClInclude Include="CommonObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="myImages.h">
+    <ClInclude Include="FavoriteJobs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,4 +1,5 @@
-﻿// Dear ImGui: standalone example application for DirectX 11
+﻿
+// Dear ImGui: standalone example application for DirectX 11
 
 // Learn about Dear ImGui:
 // - FAQ                  https://dearimgui.com/faq
@@ -19,9 +20,12 @@ using namespace std::chrono_literals;
 #include <vector>
 #include <ranges>
 
+//I added this code
+#include "../ConnectedApp/CommonObject.h"
+
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-
 // Data
 ID3D11Device*            g_pd3dDevice = nullptr;
 static ID3D11DeviceContext*     g_pd3dDeviceContext = nullptr;
@@ -29,6 +33,9 @@ static IDXGISwapChain*          g_pSwapChain = nullptr;
 static bool                     g_SwapChainOccluded = false;
 static UINT                     g_ResizeWidth = 0, g_ResizeHeight = 0;
 static ID3D11RenderTargetView*  g_mainRenderTargetView = nullptr;
+
+
+
 
 // Simple helper function to load an image into a DX11 texture with common settings
 // Use like this:
@@ -43,9 +50,10 @@ bool LoadTextureFromFile(const char* filename, ID3D11ShaderResourceView** out_sr
     int image_width = 0;
     int image_height = 0;
     unsigned char* image_data = stbi_load(filename, &image_width, &image_height, NULL, 4);
-    if (image_data == NULL)
+    if (image_data == NULL) {
+        std::cerr << "Failed to load image from file: " << filename << std::endl;
         return false;
-
+    }
     // Create texture
     D3D11_TEXTURE2D_DESC desc;
     ZeroMemory(&desc, sizeof(desc));
@@ -125,7 +133,18 @@ int GuiMain(drawcallback drawfunction, void* obj_ptr,void* callerPtr)
     //ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"ImGui Example", nullptr };
     ::RegisterClassExW(&wc);
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Dear ImGui DirectX11 Example", WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, nullptr, nullptr, wc.hInstance, nullptr);
+
+	//I added this code
+    int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    // For full screen:
+    HWND hwnd = ::CreateWindowW(wc.lpszClassName,
+        L"Dear ImGui DirectX11 Example",
+        WS_OVERLAPPEDWINDOW,
+        0, 0, screenWidth, screenHeight,
+        nullptr, nullptr, wc.hInstance, nullptr);
+
+    //HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Dear ImGui DirectX11 Example", WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, nullptr, nullptr, wc.hInstance, nullptr);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -179,6 +198,20 @@ int GuiMain(drawcallback drawfunction, void* obj_ptr,void* callerPtr)
     ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\calibril.ttf", 18.0f, nullptr, &ranges[0]);
     IM_ASSERT(font != nullptr);
 
+	//I added this code
+    static const ImWchar icon_ranges[] = { 0xf000, 0xf3ff, 0 };
+    ImFontConfig config;
+    config.MergeMode = true;
+    ImFont* icon_font_regular = io.Fonts->AddFontFromFileTTF("../../fonts/fa-regular-400.ttf", 18.0f, &config, icon_ranges);
+    ImFont* icon_font_solid = io.Fonts->AddFontFromFileTTF("../../fonts/fa-solid-900.ttf", 18.0f, &config, icon_ranges);
+
+    io.Fonts->Build();
+
+    IM_ASSERT(icon_font_regular != nullptr);
+    IM_ASSERT(icon_font_solid != nullptr);
+
+    ////////////////////
+    
     // Our state
     bool show_demo_window = true;
     bool show_another_window = false;
@@ -188,6 +221,11 @@ int GuiMain(drawcallback drawfunction, void* obj_ptr,void* callerPtr)
     bool done = false;
     while (!done)
     {
+        auto common = static_cast<CommonObjects*>(obj_ptr);
+        if (common->exit_flag.load()) {
+            done = true;
+            break;
+        }
         // Poll and handle messages (inputs, window resize, etc.)
         // See the WndProc() function below for our to dispatch events to the Win32 backend.
         MSG msg;
