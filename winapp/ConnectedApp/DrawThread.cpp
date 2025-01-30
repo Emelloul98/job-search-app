@@ -554,7 +554,7 @@ void DrawThread::display_job_table(CommonObjects& common) {
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
         // Set fixed size for popup
-        ImGui::SetNextWindowSize(ImVec2(window_size.x*0.5f, window_size.y*0.69f), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(window_size.x*0.5f, window_size.y*0.7f), ImGuiCond_Always);
         if (ImGui::BeginPopupModal("Job Details", &show_job_details))
         {
 
