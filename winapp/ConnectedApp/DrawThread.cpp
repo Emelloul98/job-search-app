@@ -10,14 +10,18 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 
+// Define constants and namespaces
 using json = nlohmann::json;
 using namespace std;
 constexpr double IM_PI = 3.14159265358979323846f;
 
 void DrawThread:: operator()(CommonObjects& common) {
 	ImPlot::CreateContext(); // Create the ImPlot context once
+    // Call the main GUI function
     GuiMain(DrawAppWindow, &common, this);
+	// set the exit flag to true to stop the download thread
     common.exit_flag = true;
+	// Save the favorite jobs to the file before exiting
     common.save_favorites_to_file = true;
     common.cv.notify_one();
 
@@ -25,7 +29,7 @@ void DrawThread:: operator()(CommonObjects& common) {
 }
 
 void DrawAppWindow(void* common_ptr,void* callerPtr) {
-
+    
     auto common = static_cast<CommonObjects*>(common_ptr);
     auto draw_thread = (DrawThread*)callerPtr;
 	// image currently not working:
@@ -71,8 +75,9 @@ void DrawThread::RenderBackgroundImage() const {
 }
 
 void DrawThread:: RenderSearchBar(CommonObjects& common) {
-
+	// Get the window size
     ImVec2 window_size = ImGui::GetIO().DisplaySize;
+	// Set the search bar width and position depending on the window size
     float searchbar_width = window_size.x * 0.8f;  
     float center_position = (window_size.x - searchbar_width) * 0.5f;
     float searchbar_y_pos = window_size.y * 0.4f; 
@@ -385,7 +390,8 @@ void DrawThread::RenderCustomComboBox(const char* label, const char* items[], si
 
     ImGui::SetNextWindowSize(ImVec2(combo_width, popup_height));
     
-    if (ImGui::BeginPopup(label, ImGuiWindowFlags_NoMove)) {
+    // Open popup with a flag that makes the window fixed in position; the user won’t be able to drag it.
+    if (ImGui::BeginPopup(label, ImGuiWindowFlags_NoMove)) { 
        
 		ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0.0f); // No rounding
 
@@ -418,7 +424,7 @@ void DrawThread::display_frame_pages(CommonObjects& common)
         (window_size.y - job_finder_window_size.y) * 0.5f
     );
 
-    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Appearing);
+    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Appearing);// apply a setting only when a window first appears.
     // Set fixed size for popup
     ImGui::SetNextWindowSize(job_finder_window_size);
 
@@ -427,7 +433,7 @@ void DrawThread::display_frame_pages(CommonObjects& common)
 	ImGui::OpenPopup("Job Finder");
     if (ImGui::BeginPopupModal("Job Finder", &show_jobs_list)){
 
-        if (ImGui::BeginTabBar("JobsTabBar", ImGuiTabBarFlags_AutoSelectNewTabs))
+		if (ImGui::BeginTabBar("JobsTabBar", ImGuiTabBarFlags_AutoSelectNewTabs)) // Create the tab bar with auto-select
         {
 			// Display the All Jobs tab:
             if (ImGui::BeginTabItem("All Jobs", nullptr, first_time ? ImGuiTabItemFlags_SetSelected : 0)) {
@@ -474,7 +480,7 @@ void DrawThread::display_job_table(CommonObjects& common) {
     float table_height = window_size.y*0.59f;
     ImGui::BeginChild("TableScrollingRegion", ImVec2(0, table_height), true);
 	// Jobs Table initialization:
-    if (ImGui::BeginTable("JobTable", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
+	if (ImGui::BeginTable("JobTable", 7, ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_SizingStretchProp))
     {
         // Table headers:
         ImGui::TableSetupColumn("num", ImGuiTableColumnFlags_WidthStretch);
@@ -551,10 +557,10 @@ void DrawThread::display_job_table(CommonObjects& common) {
 
         // Center popup in the middle of the window
         ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f)); // apply a setting only when a window first appears.
 
         // Set fixed size for popup
-        ImGui::SetNextWindowSize(ImVec2(window_size.x*0.5f, window_size.y*0.7f), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(window_size.x*0.5f, window_size.y*0.7f), ImGuiCond_Always);// apply a setting always.
         if (ImGui::BeginPopupModal("Job Details", &show_job_details))
         {
 
@@ -716,6 +722,7 @@ void DrawThread::display_last_year_stats(CommonObjects& common) {
     float months[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
     std::string title = "Average Salary Over 2024 in field: " + common.field;
 
+	// Set the position of the line chart:
 	float window_width = ImGui::GetWindowSize().x;
 	float window_height = ImGui::GetWindowSize().y;
     float graph_width = window_width * 0.8f;
