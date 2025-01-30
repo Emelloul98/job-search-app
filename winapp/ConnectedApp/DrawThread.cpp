@@ -222,7 +222,7 @@ void DrawThread:: RenderSearchBar(CommonObjects& common) {
     }
     // Popup window
 
-    ImVec2 favorites_window_size = ImVec2(window_size.x*0.5f, window_size.y*0.6f); 
+    ImVec2 favorites_window_size = ImVec2(window_size.x*0.5f, window_size.y*0.62f); 
     ImVec2 window_pos = ImVec2(
         (window_size.x - favorites_window_size.x) * 0.5f,
         (window_size.y - favorites_window_size.y) * 0.5f
@@ -411,7 +411,7 @@ void DrawThread::display_frame_pages(CommonObjects& common)
 {
     ImVec2 window_size = ImGui::GetIO().DisplaySize;
 	// Popup window size:
-    ImVec2 job_finder_window_size = ImVec2(window_size.x*0.8f, window_size.y*0.74f);
+    ImVec2 job_finder_window_size = ImVec2(window_size.x*0.8f, window_size.y*0.76f);
 	// Center the popup window:
     ImVec2 window_pos = ImVec2(
         (window_size.x - job_finder_window_size.x) * 0.5f,
